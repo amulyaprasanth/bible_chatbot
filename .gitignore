@@ -104,3 +104,4 @@ target/
 # Mac / Linux / Windows
 .DS_Store
 Thumbs.db
+bible_vectorstore

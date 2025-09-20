@@ -1,6 +1,9 @@
 pypdf
 langchain
-langchain_ollama
+sentence-transformers
+langchain_huggingface
 langchain_chroma
+langchain_ollama
+python-dotenv
 streamlit
 -e .
