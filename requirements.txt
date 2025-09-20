@@ -1,0 +1,6 @@
+pypdf
+langchain
+langchain_ollama
+langchain_chroma
+streamlit
+-e .
