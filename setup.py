@@ -3,6 +3,7 @@ from setuptools import setup, find_packages
 
 
 def parse_requirements(filepath: str) -> List:
+    """ Parses requirements as a list of requirements"""
 
     with open(filepath, "r") as f:
 
