@@ -2,8 +2,12 @@ pypdf
 langchain
 sentence-transformers
 langchain_huggingface
-langchain_chroma
-langchain_ollama
+astrapy
+langchain_groq
+langchain-community
 python-dotenv
 streamlit
+jupyter
+langchain_astradb
+huggingface_hub[hf_xet]
 -e .
