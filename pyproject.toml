@@ -1,0 +1,29 @@
+[project]
+name = "bible-chatbot"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "amulyaprasanth",email = "amulyaprasanth301@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "pypdf (>=6.1.1,<7.0.0)",
+    "langchain (>=0.3.27,<0.4.0)",
+    "sentence-transformers (>=5.1.1,<6.0.0)",
+    "langchain-huggingface (>=0.3.1,<0.4.0)",
+    "huggingface-hub[hf-xet] (>=0.35.3,<0.36.0)",
+    "astrapy (>=2.1.0,<3.0.0)",
+    "langchain-groq (>=0.3.8,<0.4.0)",
+    "langchain-community (>=0.3.31,<0.4.0)",
+    "python-dotenv (>=1.1.1,<2.0.0)",
+    "streamlit (>=1.50.0,<2.0.0)",
+    "jupyter (>=1.1.1,<2.0.0)",
+    "langchain-astradb (>=0.6.1,<0.7.0)",
+    "langchain-text-splitters (>=0.3.11,<0.4.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

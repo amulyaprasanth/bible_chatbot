@@ -14,7 +14,6 @@ list_of_files = [
     "src/exception.py",
     "requirements.txt",
     "main.py",
-    "setup.py",
     ".env",
     ".gitignore",
     "Readme.md"
