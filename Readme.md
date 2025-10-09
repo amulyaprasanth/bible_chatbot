@@ -1,243 +1,126 @@
 # Bible Chatbot
 
-A multilingual Bible assistant powered by RAG (Retrieval-Augmented Generation) that supports both English and Telugu Bible texts. The application uses vector embeddings, LangChain, and Groq's Llama 3.3 70B model to provide intelligent responses about Bible content through an intuitive Streamlit web interface.
+[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/) [![Streamlit](https://img.shields.io/badge/Streamlit-App-green.svg)](https://streamlit.io/) [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)](LICENSE)
+
+A multilingual Bible assistant powered by **RAG** (Retrieval-Augmented Generation), supporting **English** and **Telugu** Bible texts. Uses **vector embeddings**, **LangChain**, and **Groq Llama 3.3 70B model** to provide intelligent responses via a **Streamlit web interface**.
+
+---
 
 ## Features
 
-- 🌍 **Multilingual Support**: English and Telugu Bible texts with language-specific embeddings
-- 🔍 **Smart Search**: Vector-based semantic search using HuggingFace embeddings (sentence-transformers for English, Telugu-SBERT for Telugu)
-- 📚 **RAG Implementation**: Retrieval-Augmented Generation with conversation history for accurate Bible references
-- ☁️ **Cloud Vector Store**: Uses AstraDB for scalable vector storage and retrieval
-- 🎨 **Web Interface**: Interactive Streamlit-based chat interface with real-time streaming responses
-- 🤖 **Advanced AI**: Powered by Groq's Llama 3.3 70B model for intelligent Bible interpretation
-- 📖 **PDF Processing**: Automatic extraction and intelligent chunking of Bible PDFs
-- 💬 **Session Management**: Persistent chat history and context-aware conversations
+* 🌍 **Multilingual**: English and Telugu Bible texts
+* 🔍 **Semantic Search**: Vector-based retrieval
+* 📚 **RAG Implementation**: Context-aware answers with chat history
+* ☁️ **Cloud Vector Storage**: AstraDB for embeddings
+* 🎨 **Web Interface**: Real-time streaming responses
+* 🤖 **AI-Powered**: Groq Llama 3.3 70B for interpretation
+* 💬 **Session Management**: Persistent chat history per user
 
-## Project Structure
+---
 
-```
-bible_chatbot/
-├── data/
-│   ├── English/
-│   │   └── whole_bible_niv1984.pdf
-│   └── Telugu/
-│       ├── 1.pdf, 2.pdf, ..., 66.pdf
-├── src/
-│   └── bible_assistant.py
-├── research/
-│   ├── trails-english.ipynb
-│   └── trails-telugu.ipynb
-├── logs/
-├── main.py
-├── pyproject.toml
-└── requirements.txt
-```
+## Quick Start
 
-## Prerequisites
-
-- Python 3.12+
-- [AstraDB](https://astra.datastax.com/) account and database
-- [Groq](https://console.groq.com/) API key (for LLM inference)
-- [LangChain](https://www.langchain.com/) account (for tracing)
-
-## Installation
-
-### Using Poetry (Recommended)
-
-1. Clone the repository:
+### 1. Install
 
 ```bash
 git clone <repository-url>
 cd bible_chatbot
-```
-
-2. Install Poetry if you haven't already:
-
-```bash
 pip install poetry
-```
-
-3. Install dependencies:
-
-```bash
 poetry install
-```
-
-4. Activate the virtual environment:
-
-```bash
 poetry shell
 ```
 
-### Using Conda (Alternative)
-
-1. Create a conda environment:
+or using pip:
 
 ```bash
-conda create -n bible_chatbot python=3.12
-conda activate bible_chatbot
-```
-
-2. Install dependencies:
-
-```bash
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+venv\Scripts\activate     # Windows
 pip install -r requirements.txt
 ```
 
-**Note**: This project has been tested with both Poetry and Conda environments. Poetry is recommended for better dependency management and virtual environment handling.
+### 2. Configure
 
-## Configuration
-
-1. Create a `.env` file in the project root:
+Create `.env` in project root:
 
 ```env
-# AstraDB Configuration
 ASTRADB_ENDPOINT=https://your-database-id-region.astra.datastax.com
 ASTRADB_APPLICATION_TOKEN=your-astra-token
-
-# Groq API Key
 GROQ_API_KEY=your-groq-api-key
-
-# LangChain Configuration (Optional)
 LANGCHAIN_API_KEY=your-langchain-api-key
 LANGCHAIN_PROJECT=your-project-name
 ```
 
-2. Get your AstraDB credentials:
-
-   - Sign up at [AstraDB](https://astra.datastax.com/)
-   - Create a new database
-   - Copy the endpoint and application token
-
-3. Get your Groq API key:
-   - Sign up at [Groq Console](https://console.groq.com/)
-   - Generate an API key
-
-## Usage
-
-### Building Vector Store
-
-Before using the chatbot, you need to build the vector store for each language:
+### 3. Build Vector Store
 
 ```python
 from src.bible_assistant import BibleAssistant
 
-# For English Bible
-assistant = BibleAssistant(language="english")
-assistant.build_vector_store()
+assistant_en = BibleAssistant(language="english")
+assistant_en.build_vector_store()
 
-# For Telugu Bible
-assistant = BibleAssistant(language="telugu")
-assistant.build_vector_store()
+assistant_te = BibleAssistant(language="telugu")
+assistant_te.build_vector_store()
 ```
 
-Or run directly:
-
-```bash
-python src/bible_assistant.py
-```
-
-### Running the Web Interface
+### 4. Run Chatbot
 
 ```bash
 streamlit run main.py
 ```
 
-The application will open in your browser at `http://localhost:8501`.
+Open your browser at `http://localhost:8501` and select your preferred Bible language.
 
-### Using the Application
+---
 
-1. **Select Language**: Choose between English or Telugu Bible from the sidebar
-2. **Ask Questions**: Type your Bible-related questions in the chat input
-3. **Get Responses**: The AI will provide contextual answers based on the selected Bible version
-4. **Continue Conversations**: Each session maintains chat history for context-aware responses
+## Usage
 
-**Example Questions**:
+* Ask questions like:
 
-- "What does John 3:16 say?"
-- "Explain the story of David and Goliath"
-- "What are the Ten Commandments?"
-- "Tell me about Jesus' miracles"
+  * "What does John 3:16 say?"
+  * "Explain the story of David and Goliath"
+  * "What are the Ten Commandments?"
 
-## Technical Details
+* Each session maintains chat history for contextual responses.
 
-### Embeddings
+---
 
-- **English**: Uses AstraDB's Vector Service with `sentence-transformers/all-MiniLM-L6-v2`
-- **Telugu**: Uses HuggingFace `l3cube-pune/telugu-sentence-bert-nli` model
+## Deployment
 
-### Document Processing
+* Can be deployed **locally** or on cloud platforms supporting Python and Streamlit (e.g., Heroku, AWS, Azure)
+* Ensure `.env` variables are set for production
+* Use **persistent session IDs** to maintain chat history across user sessions
 
-- PDFs are automatically loaded and split into chunks of 2000 characters with 200 character overlap
-- Each chunk is assigned a unique hash-based ID for efficient retrieval
-- Documents are embedded and stored in AstraDB vector collections
-
-### Vector Collections
-
-- `english_bible`: Stores English Bible embeddings
-- `telugu_bible`: Stores Telugu Bible embeddings
-
-## Development
-
-### Project Dependencies
-
-The project uses several key libraries:
-
-- **LangChain**: Framework for building LLM applications
-- **AstraDB**: Vector database for embeddings storage
-- **Streamlit**: Web interface framework
-- **PyPDF**: PDF document processing
-- **HuggingFace**: Embedding models and transformers
-
-### Logging
-
-Application logs are stored in the `logs/` directory with daily rotation. Check `logs/YYYY-MM-DD/app.log` for detailed execution logs.
-
-## Troubleshooting
-
-### Common Issues
-
-1. **AstraDB Connection Failed**
-
-   - Verify your endpoint and token in `.env`
-   - Ensure your database is running and accessible
-
-2. **No PDFs Found**
-
-   - Check that PDF files are in the correct directories
-   - Verify file names match expected patterns
-
-3. **Memory Issues**
-   - Large PDFs may require significant RAM
-   - Consider processing files in smaller batches
-
-### Logs
-
-Check the application logs for detailed error information:
+**Example: Deploy on Streamlit Cloud**
 
 ```bash
-tail -f logs/$(date +%Y-%m-%d)/app.log
+git push origin main
 ```
 
-## Contributing
+Connect your repo to [Streamlit Cloud](https://share.streamlit.io/) and it will automatically deploy your app.
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+---
+
+## Technical Overview
+
+* **English Embeddings**: AstraDB Vector Service + `sentence-transformers/all-MiniLM-L6-v2`
+* **Telugu Embeddings**: HuggingFace `l3cube-pune/telugu-sentence-bert-nli`
+* **PDF Processing**: Chunks of 2000 characters with 200 overlap, hash-based IDs for retrieval
+* **Vector Collections**: `english_bible`, `telugu_bible`
+
+---
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License – see [LICENSE](LICENSE)
+
+---
 
 ## Acknowledgments
 
-- [LangChain](https://github.com/langchain-ai/langchain) for the RAG framework
-- [AstraDB](https://www.datastax.com/products/datastax-astra) for vector storage
-- [HuggingFace](https://huggingface.co/) for embedding models
-- [Streamlit](https://streamlit.io/) for the web interface
+* [LangChain](https://github.com/langchain-ai/langchain) – RAG framework
+* [AstraDB](https://www.datastax.com/products/datastax-astra) – Vector database
+* [HuggingFace](https://huggingface.co/) – Embedding models
+* [Streamlit](https://streamlit.io/) – Web interface
 
-## Support
-
-For questions or issues, please open an issue on GitHub or contact the maintainer.
+---
