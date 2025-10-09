@@ -113,18 +113,6 @@ LANGCHAIN_PROJECT=your-project-name
    - Sign up at [Groq Console](https://console.groq.com/)
    - Generate an API key
 
-## Data Setup
-
-### English Bible
-
-- Place your English Bible PDF in `data/English/whole_bible_niv1984.pdf`
-- The system expects the NIV 1984 version, but other versions should work
-
-### Telugu Bible
-
-- Place Telugu Bible PDFs (66 books) in `data/Telugu/` directory
-- Name them as `1.pdf`, `2.pdf`, ..., `66.pdf` (corresponding to Bible books)
-
 ## Usage
 
 ### Building Vector Store
