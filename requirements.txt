@@ -10,4 +10,3 @@ streamlit
 jupyter
 langchain_astradb
 huggingface_hub[hf_xet]
--e .
