@@ -1,6 +1,6 @@
 # Bible Chatbot
 
-[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/) [![Streamlit](https://img.shields.io/badge/Streamlit-App-green.svg)](https://streamlit.io/) [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/) [![Streamlit](https://img.shields.io/badge/Streamlit-App-green.svg)](biblechatbot-2zdhecs8pnxdyj3ufmgjqx) [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)](LICENSE)
 
 A multilingual Bible assistant powered by **RAG** (Retrieval-Augmented Generation), supporting **English** and **Telugu** Bible texts. Uses **vector embeddings**, **LangChain**, and **Groq Llama 3.3 70B model** to provide intelligent responses via a **Streamlit web interface**.
 
