@@ -151,7 +151,7 @@ class BibleAssistant:
                                                                     Standalone Question:"""
         contextualize_prompt = ChatPromptTemplate.from_template(contextualize_system_prompt)
 
-        llm = ChatGroq(model_name="llama-3.3-70b-versatile", streaming=True)
+        llm = ChatGroq(model_name="llama-3.3-70b-versatile")
         docs_chain = create_stuff_documents_chain(llm, prompt)
         retriever = create_history_aware_retriever(
             llm, vector_store.as_retriever(), contextualize_prompt)
