@@ -29,7 +29,8 @@ ASTRA_DB_ENDPOINT = os.getenv("ASTRADB_ENDPOINT")
 ASTRA_DB_TOKEN = os.getenv("ASTRADB_APPLICATION_TOKEN")
 
 if not ASTRA_DB_ENDPOINT or not ASTRA_DB_TOKEN:
-    logger.critical("AstraDB credentials missing. Please check .env configuration.")
+    logger.critical(
+        "AstraDB credentials missing. Please check .env configuration.")
     sys.exit(1)
 
 
@@ -39,9 +40,11 @@ class BibleAssistant:
     def __init__(self, language: str):
         self.language = language.strip().lower()
         if self.language not in self.SUPPORTED_LANGUAGES:
-            raise ValueError(f"Language must be one of {self.SUPPORTED_LANGUAGES}")
+            raise ValueError(
+                f"Language must be one of {self.SUPPORTED_LANGUAGES}")
 
-        logger.info(f"BibleAssistant initialized for {self.language.capitalize()} Bible.")
+        logger.info(
+            f"BibleAssistant initialized for {self.language.capitalize()} Bible.")
 
         self._store = {}  # in-memory chat history
         self.vector_store = None
@@ -60,7 +63,8 @@ class BibleAssistant:
     def _load_and_split_documents(self) -> List[Document]:
         loader = PyPDFDirectoryLoader(self._get_data_path())
         docs = loader.load()
-        splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=200)
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=2000, chunk_overlap=200)
         return splitter.split_documents(docs)
 
     def build_vector_store(self):
@@ -81,7 +85,8 @@ class BibleAssistant:
                     collection_vector_service_options=hf_vectorize_options,
                 )
             else:
-                embedding_model = HuggingFaceEmbeddings(model_name="l3cube-pune/telugu-sentence-bert-nli")
+                embedding_model = HuggingFaceEmbeddings(
+                    model_name="l3cube-pune/telugu-sentence-bert-nli")
                 self.vector_store = AstraDBVectorStore(
                     collection_name="telugu_bible",
                     api_endpoint=ASTRA_DB_ENDPOINT,
@@ -91,7 +96,8 @@ class BibleAssistant:
 
             ids = [self.generate_doc_id(doc) for doc in chunks]
             self.vector_store.add_documents(chunks, ids=ids)
-            logger.info(f"✅ Uploaded {len(chunks)} chunks in {time.time() - start:.2f}s")
+            logger.info(
+                f"✅ Uploaded {len(chunks)} chunks in {time.time() - start:.2f}s")
         except Exception as e:
             logger.exception(f"❌ Failed to build vector store: {str(e)}")
             sys.exit(1)
@@ -111,7 +117,8 @@ class BibleAssistant:
                 collection_vector_service_options=hf_vectorize_options,
             )
         else:
-            embedding_model = HuggingFaceEmbeddings(model_name="l3cube-pune/telugu-sentence-bert-nli")
+            embedding_model = HuggingFaceEmbeddings(
+                model_name="l3cube-pune/telugu-sentence-bert-nli")
             vector_store = AstraDBVectorStore(
                 collection_name="telugu_bible",
                 api_endpoint=ASTRA_DB_ENDPOINT,
@@ -137,16 +144,12 @@ class BibleAssistant:
         ])
 
         # Contextual rephrasing prompt also includes chat history
-        contextualize_prompt = ChatPromptTemplate.from_messages([
-            ("system", "Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
-
-Chat History:
-{chat_history}
-Follow Up Input: {input}
-Standalone Question:"),
-            MessagesPlaceholder(variable_name="chat_history"),
-            ("human", "{input}"),
-        ])
+        contextualize_system_prompt = """Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
+                                                                    Chat History:
+                                                                    {chat_history}
+                                                                    Follow Up Input: {input}
+                                                                    Standalone Question:"""
+        contextualize_prompt = ChatPromptTemplate.from_template(contextualize_system_prompt)
 
         llm = ChatGroq(model_name="llama-3.3-70b-versatile", streaming=True)
         docs_chain = create_stuff_documents_chain(llm, prompt)
