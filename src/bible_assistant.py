@@ -10,7 +10,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from astrapy.info import VectorServiceOptions
 from langchain_astradb import AstraDBVectorStore
 from langchain_core.documents import Document
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.history_aware_retriever import create_history_aware_retriever
@@ -129,13 +129,17 @@ class BibleAssistant:
             "Do not make up or hallucinate any information.\n\nContext:\n{context}"
         )
 
+        # Main prompt with chat history placeholder
         prompt = ChatPromptTemplate.from_messages([
             ("system", system_text),
+            MessagesPlaceholder(variable_name="chat_history"),
             ("human", "{input}"),
         ])
 
+        # Contextual rephrasing prompt also includes chat history
         contextualize_prompt = ChatPromptTemplate.from_messages([
             ("system", "Rephrase the user question using history, don't answer it."),
+            MessagesPlaceholder(variable_name="chat_history"),
             ("human", "{input}"),
         ])
 
