@@ -2,10 +2,10 @@ import hashlib
 import os
 import sys
 import time
+import re
 from typing import List
 from dotenv import load_dotenv
 from langchain_community.document_loaders import PyPDFDirectoryLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from astrapy.info import VectorServiceOptions
 from langchain_astradb import AstraDBVectorStore
@@ -19,6 +19,7 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
 from src import logger
 
+# Load environment
 load_dotenv()
 os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY", "")
 os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY", "")
@@ -29,9 +30,24 @@ ASTRA_DB_ENDPOINT = os.getenv("ASTRADB_ENDPOINT")
 ASTRA_DB_TOKEN = os.getenv("ASTRADB_APPLICATION_TOKEN")
 
 if not ASTRA_DB_ENDPOINT or not ASTRA_DB_TOKEN:
-    logger.critical(
-        "AstraDB credentials missing. Please check .env configuration.")
+    logger.critical("AstraDB credentials missing. Please check .env configuration.")
     sys.exit(1)
+
+
+def verse_splitter(documents: List[Document]) -> List[Document]:
+    """
+    Splits Bible text into verse-level chunks.
+    Preserves verse numbers and metadata.
+    """
+    chunks = []
+    for doc in documents:
+        text = doc.page_content.replace("\n", " ").strip()
+        # Split by verse numbers
+        verses = re.split(r'(\d+)\s', text)
+        for i in range(1, len(verses), 2):
+            verse_text = f"{verses[i]} {verses[i+1].strip()}"
+            chunks.append(Document(page_content=verse_text, metadata=doc.metadata))
+    return chunks
 
 
 class BibleAssistant:
@@ -40,11 +56,9 @@ class BibleAssistant:
     def __init__(self, language: str):
         self.language = language.strip().lower()
         if self.language not in self.SUPPORTED_LANGUAGES:
-            raise ValueError(
-                f"Language must be one of {self.SUPPORTED_LANGUAGES}")
+            raise ValueError(f"Language must be one of {self.SUPPORTED_LANGUAGES}")
 
-        logger.info(
-            f"BibleAssistant initialized for {self.language.capitalize()} Bible.")
+        logger.info(f"BibleAssistant initialized for {self.language.capitalize()} Bible.")
 
         self._store = {}  # in-memory chat history
         self.vector_store = None
@@ -63,9 +77,8 @@ class BibleAssistant:
     def _load_and_split_documents(self) -> List[Document]:
         loader = PyPDFDirectoryLoader(self._get_data_path())
         docs = loader.load()
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=2000, chunk_overlap=200)
-        return splitter.split_documents(docs)
+        # Use verse-level splitting
+        return verse_splitter(docs)
 
     def build_vector_store(self):
         try:
@@ -96,14 +109,13 @@ class BibleAssistant:
 
             ids = [self.generate_doc_id(doc) for doc in chunks]
             self.vector_store.add_documents(chunks, ids=ids)
-            logger.info(
-                f"✅ Uploaded {len(chunks)} chunks in {time.time() - start:.2f}s")
+            logger.info(f"✅ Uploaded {len(chunks)} verse-level chunks in {time.time() - start:.2f}s")
         except Exception as e:
             logger.exception(f"❌ Failed to build vector store: {str(e)}")
             sys.exit(1)
 
     def _setup_chain(self):
-        # Initialize vector store (must pass embeddings or vector service)
+        # Initialize vector store
         if self.language == "english":
             hf_vectorize_options = VectorServiceOptions(
                 provider="huggingface",
@@ -136,25 +148,24 @@ class BibleAssistant:
             "Do not make up or hallucinate any information.\n\nContext:\n{context}"
         )
 
-        # Main prompt with chat history placeholder
         prompt = ChatPromptTemplate.from_messages([
             ("system", system_text),
             MessagesPlaceholder(variable_name="chat_history"),
             ("human", "{input}"),
         ])
 
-        # Contextual rephrasing prompt also includes chat history
-        contextualize_system_prompt = """Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
-                                                                    Chat History:
-                                                                    {chat_history}
-                                                                    Follow Up Input: {input}
-                                                                    Standalone Question:"""
+        contextualize_system_prompt = (
+            "Given the following conversation and a follow-up question, "
+            "rephrase the follow-up question to be a standalone question.\n\n"
+            "Chat History:\n{chat_history}\nFollow Up Input: {input}\nStandalone Question:"
+        )
         contextualize_prompt = ChatPromptTemplate.from_template(contextualize_system_prompt)
 
         llm = ChatGroq(model_name="llama-3.3-70b-versatile")
         docs_chain = create_stuff_documents_chain(llm, prompt)
         retriever = create_history_aware_retriever(
-            llm, vector_store.as_retriever(), contextualize_prompt)
+            llm, vector_store.as_retriever(), contextualize_prompt
+        )
         chain = create_retrieval_chain(retriever, docs_chain)
 
         return RunnableWithMessageHistory(
@@ -179,3 +190,23 @@ class BibleAssistant:
             config={"configurable": {"session_id": session_id}},
         )
         return response.get("answer", "No answer found.")
+
+
+if __name__ == "__main__":
+    try:
+        # English Bible
+        logger.info("Building vector store for English Bible...")
+        english_assistant = BibleAssistant(language="english")
+        english_assistant.build_vector_store()
+        logger.info("✅ English Bible vector store uploaded successfully.\n")
+
+        # Telugu Bible
+        logger.info("Building vector store for Telugu Bible...")
+        telugu_assistant = BibleAssistant(language="telugu")
+        telugu_assistant.build_vector_store()
+        logger.info("✅ Telugu Bible vector store uploaded successfully.\n")
+
+        logger.info("🎉 All Bibles uploaded to vector store successfully!")
+    except Exception as e:
+        logger.exception(f"❌ Failed to upload Bible documents: {str(e)}")
+        sys.exit(1)
