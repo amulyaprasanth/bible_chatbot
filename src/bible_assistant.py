@@ -138,7 +138,12 @@ class BibleAssistant:
 
         # Contextual rephrasing prompt also includes chat history
         contextualize_prompt = ChatPromptTemplate.from_messages([
-            ("system", "Rephrase the user question using history, don't answer it."),
+            ("system", "Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
+
+Chat History:
+{chat_history}
+Follow Up Input: {input}
+Standalone Question:"),
             MessagesPlaceholder(variable_name="chat_history"),
             ("human", "{input}"),
         ])
