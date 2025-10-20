@@ -24,7 +24,8 @@ dependencies = [
     "redis (>=6.4.0,<7.0.0)",
     "sqlalchemy (>=2.0.44,<3.0.0)",
     "pymysql (>=1.1.2,<2.0.0)",
-    "cryptography (>=46.0.3,<47.0.0)"
+    "cryptography (>=46.0.3,<47.0.0)",
+    "bcrypt (>=5.0.0,<6.0.0)"
 ]
 
 

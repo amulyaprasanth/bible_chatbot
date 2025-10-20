@@ -6,29 +6,27 @@ import { useNavigate } from "react-router-dom";
 import bgSigninLandscape from "../assets/bg_signin_landscape.jpg";
 import bgSigninPortrait from "../assets/bg_signin_portrait.jpg";
 
-// Helper: hash string with SHA-256
-const hashPassword = async (password: string): Promise<string> => {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-};
+interface FormData {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
 
 export const AuthForm = () => {
   const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
-  const [error, setError] = useState(""); // <-- Error state
+  const [error, setError] = useState("");
 
   const toggleForm = () => {
     setIsSignUp(!isSignUp);
-    setError(""); // Clear errors when toggling
+    setError("");
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,49 +34,52 @@ export const AuthForm = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  // --- Login ---
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(""); // clear previous errors
-    const hashedPassword = await hashPassword(formData.password);
+    setError("");
 
-    axios
-      .post("http://localhost:8000/login", {
+    try {
+      const res = await axios.post("http://localhost:8000/login", {
         username: formData.email,
-        password: hashedPassword,
-      })
-      .then((res) => {
-        if (res.data.success) {
-          navigate("/dashboard");
-        } else {
-          setError(res.data.message || "Invalid credentials");
-        }
-      })
-      .catch(() => setError("Login failed. Please try again."));
+        password: formData.password,
+      });
+
+      if (res.data.success) {
+        navigate("/dashboard");
+      } else {
+        setError(res.data.message || "Invalid credentials");
+      }
+    } catch {
+      setError("Login failed. Please try again.");
+    }
   };
 
+  // --- Signup ---
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(""); // clear previous errors
+    setError("");
+
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match!");
       return;
     }
-    const hashedPassword = await hashPassword(formData.password);
 
-    axios
-      .post("http://localhost:8000/signup", {
+    try {
+      const res = await axios.post("http://localhost:8000/signup", {
         name: formData.name,
         email: formData.email,
-        password: hashedPassword,
-      })
-      .then((res) => {
-        if (res.data.success) {
-          navigate("/dashboard");
-        } else {
-          setError(res.data.message || "Signup failed.");
-        }
-      })
-      .catch(() => setError("Signup failed. Please try again."));
+        password: formData.password,
+      });
+
+      if (res.data.success) {
+        navigate("/dashboard");
+      } else {
+        setError(res.data.message || "Signup failed.");
+      }
+    } catch {
+      setError("Signup failed. Please try again.");
+    }
   };
 
   return (
@@ -128,24 +129,19 @@ export const AuthForm = () => {
             <span className="border-b w-1/4"></span>
           </div>
 
-          {/* Display error */}
           {error && (
             <div className="bg-red-100 text-red-700 p-2 rounded mb-2 text-center">
               {error}
             </div>
           )}
 
-          {/* Form */}
           <form
             onSubmit={isSignUp ? handleSignup : handleLogin}
             className="flex flex-col gap-4"
           >
             {isSignUp && (
               <div className="flex flex-col">
-                <label
-                  htmlFor="name"
-                  className="text-gray-700 dark:text-gray-200 mb-1"
-                >
+                <label htmlFor="name" className="text-gray-700 dark:text-gray-200 mb-1">
                   Full Name
                 </label>
                 <input
@@ -161,10 +157,7 @@ export const AuthForm = () => {
             )}
 
             <div className="flex flex-col">
-              <label
-                htmlFor="email"
-                className="text-gray-700 dark:text-gray-200 mb-1"
-              >
+              <label htmlFor="email" className="text-gray-700 dark:text-gray-200 mb-1">
                 Email
               </label>
               <input
@@ -179,10 +172,7 @@ export const AuthForm = () => {
             </div>
 
             <div className="flex flex-col">
-              <label
-                htmlFor="password"
-                className="text-gray-700 dark:text-gray-200 mb-1"
-              >
+              <label htmlFor="password" className="text-gray-700 dark:text-gray-200 mb-1">
                 Password
               </label>
               <input

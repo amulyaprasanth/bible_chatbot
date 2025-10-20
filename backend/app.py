@@ -1,33 +1,39 @@
-from fastapi import FastAPI, HTTPException, Depends
+import bcrypt
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import get_db
-from models import SignInRequest, SignUpRequest, User  # User = SQLAlchemy model
+from models import SignInRequest, SignUpRequest, User
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # adjust for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Signup
+# --- Signup ---
+
+
 @app.post("/signup")
 def create_account(request: SignUpRequest, db: Session = Depends(get_db)):
-    existing_user = db.query(User).filter(User.email == request.email).first()
+    # use username instead of email for consistency
+    existing_user = db.query(User).filter(
+        User.name == request.name).first()
     if existing_user:
-        return {
-            "success": False,
-            "message": "Email already registered"
-        }
-    
+        return {"success": False, "message": "Username already taken"}
+
+    # Server-side bcrypt hashing
+    hashed_password = bcrypt.hashpw(
+        request.password.encode(), bcrypt.gensalt())
+
     new_user = User(
         name=request.name,
         email=request.email,
-        password=request.password  # frontend already hashed
+        password=hashed_password.decode()  # store bcrypt hash
     )
     db.add(new_user)
     db.commit()
@@ -38,22 +44,24 @@ def create_account(request: SignUpRequest, db: Session = Depends(get_db)):
         "message": "Account created successfully",
         "user": {
             "id": new_user.id,
-            "name": new_user.name,
+            "username": new_user.name,
             "email": new_user.email
         }
     }
 
+# --- Login ---
 
-# Login
+
 @app.post("/login")
 def login(request: SignInRequest, db: Session = Depends(get_db)):
+    # login using email sent as username
     user = db.query(User).filter(User.email == request.username).first()
-    if not user or user.password != request.password:
-        return {
-            "success": False,
-            "message": "Invalid credentials"
-        }
-    
+    if not user:
+        return {"success": False, "message": "Invalid credentials"}
+
+    if not bcrypt.checkpw(request.password.encode(), user.password.encode()):
+        return {"success": False, "message": "Invalid credentials"}
+
     return {
         "success": True,
         "message": "Login successful",
