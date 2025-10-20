@@ -1,0 +1,241 @@
+import axios from "axios";
+import { motion } from "framer-motion";
+import { useState } from "react";
+import { FcGoogle } from "react-icons/fc";
+import { useNavigate } from "react-router-dom";
+import bgSigninLandscape from "../assets/bg_signin_landscape.jpg";
+import bgSigninPortrait from "../assets/bg_signin_portrait.jpg";
+
+// Helper: hash string with SHA-256
+const hashPassword = async (password: string): Promise<string> => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+};
+
+export const AuthForm = () => {
+  const navigate = useNavigate();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [error, setError] = useState(""); // <-- Error state
+
+  const toggleForm = () => {
+    setIsSignUp(!isSignUp);
+    setError(""); // Clear errors when toggling
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(""); // clear previous errors
+    const hashedPassword = await hashPassword(formData.password);
+
+    axios
+      .post("http://localhost:8000/login", {
+        username: formData.email,
+        password: hashedPassword,
+      })
+      .then((res) => {
+        if (res.data.success) {
+          navigate("/dashboard");
+        } else {
+          setError(res.data.message || "Invalid credentials");
+        }
+      })
+      .catch(() => setError("Login failed. Please try again."));
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(""); // clear previous errors
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match!");
+      return;
+    }
+    const hashedPassword = await hashPassword(formData.password);
+
+    axios
+      .post("http://localhost:8000/signup", {
+        name: formData.name,
+        email: formData.email,
+        password: hashedPassword,
+      })
+      .then((res) => {
+        if (res.data.success) {
+          navigate("/dashboard");
+        } else {
+          setError(res.data.message || "Signup failed.");
+        }
+      })
+      .catch(() => setError("Signup failed. Please try again."));
+  };
+
+  return (
+    <div className="relative w-full h-screen overflow-hidden">
+      {/* Background images */}
+      <img
+        src={bgSigninLandscape}
+        alt="Signin background landscape"
+        className="hidden md:block absolute inset-0 w-full h-full object-cover"
+      />
+      <img
+        src={bgSigninPortrait}
+        alt="Signin background portrait"
+        className="block md:hidden absolute inset-0 w-full h-full object-cover"
+      />
+
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+      {/* Form container */}
+      <div className="relative z-10 flex items-center justify-center h-full p-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 30 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="bg-white/90 dark:bg-gray-900/90 rounded-2xl shadow-2xl p-10 w-full max-w-md backdrop-blur-lg transition-all duration-700 ease-in-out transform hover:scale-[1.02]"
+        >
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 text-center tracking-wide">
+            {isSignUp ? "Create Your Account" : "Welcome Back"}
+          </h2>
+
+          {/* Google Auth */}
+          <button
+            type="button"
+            className="flex items-center justify-center w-full border border-gray-300 dark:border-gray-600 rounded-lg py-3 mb-4 hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-800"
+            onClick={() => console.log("Handle Google Auth")}
+          >
+            <FcGoogle className="mr-3 text-xl" />
+            <span className="text-gray-700 dark:text-gray-200">
+              Continue with Google
+            </span>
+          </button>
+
+          <div className="flex items-center justify-center my-4 text-gray-400">
+            <span className="border-b w-1/4"></span>
+            <span className="px-2">or</span>
+            <span className="border-b w-1/4"></span>
+          </div>
+
+          {/* Display error */}
+          {error && (
+            <div className="bg-red-100 text-red-700 p-2 rounded mb-2 text-center">
+              {error}
+            </div>
+          )}
+
+          {/* Form */}
+          <form
+            onSubmit={isSignUp ? handleSignup : handleLogin}
+            className="flex flex-col gap-4"
+          >
+            {isSignUp && (
+              <div className="flex flex-col">
+                <label
+                  htmlFor="name"
+                  className="text-gray-700 dark:text-gray-200 mb-1"
+                >
+                  Full Name
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  name="name"
+                  placeholder="Your Name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition"
+                />
+              </div>
+            )}
+
+            <div className="flex flex-col">
+              <label
+                htmlFor="email"
+                className="text-gray-700 dark:text-gray-200 mb-1"
+              >
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                placeholder="email@example.com"
+                value={formData.email}
+                onChange={handleChange}
+                className="p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition"
+              />
+            </div>
+
+            <div className="flex flex-col">
+              <label
+                htmlFor="password"
+                className="text-gray-700 dark:text-gray-200 mb-1"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+                className="p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition"
+              />
+            </div>
+
+            {isSignUp && (
+              <div className="flex flex-col">
+                <label
+                  htmlFor="confirmPassword"
+                  className="text-gray-700 dark:text-gray-200 mb-1"
+                >
+                  Confirm Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Confirm Password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition"
+                />
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="mt-4 bg-indigo-600 text-white font-semibold p-3 rounded-lg hover:bg-indigo-700 transition-all"
+            >
+              {isSignUp ? "Create Account" : "Sign In"}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-gray-600 dark:text-gray-300">
+            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+            <button
+              type="button"
+              onClick={toggleForm}
+              className="text-indigo-600 dark:text-indigo-400 cursor-pointer font-semibold hover:underline bg-transparent border-none p-0"
+            >
+              {isSignUp ? "Sign In" : "Sign Up"}
+            </button>
+          </p>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
