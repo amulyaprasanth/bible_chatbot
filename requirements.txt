@@ -10,3 +10,6 @@ streamlit
 jupyter
 langchain_astradb
 huggingface_hub[hf_xet]
+google-auth
+google-auth-oauthlib
+google-auth-httplib2

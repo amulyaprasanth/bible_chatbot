@@ -1,148 +1,200 @@
-[
+{
+  "conversations": [
     {
       "id": 1,
+      "user_id": 1,
+      "title": "Morning Devotional",
+      "is_active": true,
+      "created_at": "2025-10-20T06:30:00",
+      "updated_at": "2025-10-20T07:00:00",
       "messages": [
-        { "sender": "Alice", "text": "Hi, can you explain Genesis 1:1?" },
-        { "sender": "Assistant", "text": "Sure! Genesis 1:1 says 'In the beginning, God created the heavens and the earth,' which marks the start of creation." }
+        {
+          "sender_type": "USER",
+          "content": "Good morning! Can you help me reflect on Psalm 23?",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-20T06:31:00"
+        },
+        {
+          "sender_type": "BOT",
+          "content": "Of course! Psalm 23 reminds us that God is our shepherd, guiding and protecting us.",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-20T06:31:15"
+        },
+        {
+          "sender_type": "USER",
+          "content": "That gives me peace today.",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-20T06:32:10"
+        }
       ]
     },
     {
       "id": 2,
+      "user_id": 1,
+      "title": "Understanding Faith",
+      "is_active": false,
+      "created_at": "2025-10-18T09:15:00",
+      "updated_at": "2025-10-18T09:45:00",
       "messages": [
-        { "sender": "Bob", "text": "What's the meaning of Proverbs 3:5?" },
-        { "sender": "Assistant", "text": "Proverbs 3:5 says 'Trust in the Lord with all your heart...' meaning rely on God rather than your own understanding." },
-        { "sender": "Bob", "text": "Does that mean I shouldn't worry about decisions?" },
-        { "sender": "Assistant", "text": "Exactly! Trust that God will guide you if you seek Him." }
+        {
+          "sender_type": "USER",
+          "content": "What does faith really mean according to the Bible?",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-18T09:16:00"
+        },
+        {
+          "sender_type": "BOT",
+          "content": "Faith is confidence in what we hope for and assurance about what we do not see (Hebrews 11:1).",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-18T09:16:20"
+        }
       ]
     },
     {
       "id": 3,
+      "user_id": 2,
+      "title": "AI and the Bible",
+      "is_active": true,
+      "created_at": "2025-10-19T21:10:00",
+      "updated_at": "2025-10-19T21:45:00",
       "messages": [
-        { "sender": "Charlie", "text": "Tell me a prayer for courage." },
-        { "sender": "Assistant", "text": "You can say: 'Lord, give me strength and courage to face challenges today.'"}
+        {
+          "sender_type": "USER",
+          "content": "How can AI be used to study the Bible?",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-19T21:12:00"
+        },
+        {
+          "sender_type": "BOT",
+          "content": "AI can assist by providing contextual insights and language comparisons for verses.",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-19T21:12:30"
+        },
+        {
+          "sender_type": "USER",
+          "content": "That sounds interesting. Could it ever replace a pastor?",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-19T21:13:15"
+        },
+        {
+          "sender_type": "BOT",
+          "content": "No, AI can support learning, but spiritual guidance remains human.",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-19T21:14:00"
+        }
       ]
     },
     {
       "id": 4,
+      "user_id": 3,
+      "title": "Psalms of Comfort",
+      "is_active": true,
+      "created_at": "2025-10-20T22:00:00",
+      "updated_at": "2025-10-20T22:15:00",
       "messages": [
-        { "sender": "Dana", "text": "Can you summarize Matthew 5?" },
-        { "sender": "Assistant", "text": "Matthew 5 is the Sermon on the Mount. It teaches about humility, mercy, and righteousness." },
-        { "sender": "Dana", "text": "Which is the most important teaching there?" },
-        { "sender": "Assistant", "text": "Jesus emphasizes loving others and being a light to the world." }
+        {
+          "sender_type": "USER",
+          "content": "Psalm 91 has been comforting me lately.",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-20T22:01:00"
+        },
+        {
+          "sender_type": "BOT",
+          "content": "Yes, it reminds us that those who dwell in the secret place of the Most High are protected.",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-20T22:01:40"
+        },
+        {
+          "sender_type": "USER",
+          "content": "Exactly! Especially during hard times.",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-20T22:02:15"
+        }
       ]
     },
     {
       "id": 5,
+      "user_id": 4,
+      "title": "Book of Revelation Study",
+      "is_active": true,
+      "created_at": "2025-10-19T20:00:00",
+      "updated_at": "2025-10-20T08:30:00",
       "messages": [
-        { "sender": "Eve", "text": "Show me verses about forgiveness." },
-        { "sender": "Assistant", "text": "Matthew 6:14-15 teaches that forgiving others leads to God forgiving you." }
+        {
+          "sender_type": "USER",
+          "content": "The visions in Revelation are so mysterious.",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-19T20:01:00"
+        },
+        {
+          "sender_type": "BOT",
+          "content": "They are indeed. They symbolize hope, judgment, and ultimate victory through Christ.",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-19T20:01:45"
+        },
+        {
+          "sender_type": "USER",
+          "content": "Can you summarize Revelation 21?",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-20T08:29:10"
+        },
+        {
+          "sender_type": "BOT",
+          "content": "It describes the new heaven and new earth — a place of no pain or sorrow.",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-20T08:30:00"
+        }
       ]
     },
     {
       "id": 6,
+      "user_id": 2,
+      "title": "Daily Reflections",
+      "is_active": false,
+      "created_at": "2025-10-17T07:00:00",
+      "updated_at": "2025-10-17T07:20:00",
       "messages": [
-        { "sender": "Frank", "text": "What is the shortest verse in the Bible?" },
-        { "sender": "Assistant", "text": "John 11:35: 'Jesus wept.' It shows His compassion." }
+        {
+          "sender_type": "USER",
+          "content": "I want to make daily reflections a habit.",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-17T07:01:00"
+        },
+        {
+          "sender_type": "BOT",
+          "content": "That’s wonderful! Consistency in reflection deepens faith.",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-17T07:02:10"
+        }
       ]
     },
     {
       "id": 7,
+      "user_id": 3,
+      "title": "Understanding Forgiveness",
+      "is_active": true,
+      "created_at": "2025-10-21T10:10:00",
+      "updated_at": "2025-10-21T10:30:00",
       "messages": [
-        { "sender": "Grace", "text": "Explain Psalm 23." },
-        { "sender": "Assistant", "text": "Psalm 23 describes God as a shepherd guiding and protecting His people." }
-      ]
-    },
-    {
-      "id": 8,
-      "messages": [
-        { "sender": "Hank", "text": "I want a verse about patience." },
-        { "sender": "Assistant", "text": "Romans 12:12: 'Be joyful in hope, patient in affliction, faithful in prayer.'" },
-        { "sender": "Hank", "text": "Thank you!" }
-      ]
-    },
-    {
-      "id": 9,
-      "messages": [
-        { "sender": "Ivy", "text": "What's the difference between Old and New Testament?" },
-        { "sender": "Assistant", "text": "Old Testament: history, laws, and prophecies before Jesus. New Testament: life and teachings of Jesus and early church letters." }
-      ]
-    },
-    {
-      "id": 10,
-      "messages": [
-        { "sender": "Jack", "text": "How do I love my neighbor?" },
-        { "sender": "Assistant", "text": "Treat them with kindness and care as you would yourself, even if you don't like them." }
-      ]
-    },
-    {
-      "id": 11,
-      "messages": [
-        { "sender": "Alice", "text": "Can I say a prayer every morning?" },
-        { "sender": "Assistant", "text": "Yes, it helps you start the day focused and connected to God." }
-      ]
-    },
-    {
-      "id": 12,
-      "messages": [
-        { "sender": "Bob", "text": "Which verse talks about faith without works?" },
-        { "sender": "Assistant", "text": "James 2:17: 'Faith by itself, if it does not have works, is dead.'" }
-      ]
-    },
-    {
-      "id": 13,
-      "messages": [
-        { "sender": "Charlie", "text": "Give me a verse about hope." },
-        { "sender": "Assistant", "text": "Romans 15:13: 'May the God of hope fill you with all joy and peace as you trust in Him.'"}
-      ]
-    },
-    {
-      "id": 14,
-      "messages": [
-        { "sender": "Dana", "text": "Can you explain the Beatitudes?" },
-        { "sender": "Assistant", "text": "The Beatitudes are blessings in Matthew 5 that describe attitudes that are pleasing to God." }
-      ]
-    },
-    {
-      "id": 15,
-      "messages": [
-        { "sender": "Eve", "text": "Show me verses about love." },
-        { "sender": "Assistant", "text": "1 Corinthians 13:4-7: 'Love is patient, love is kind...'" }
-      ]
-    },
-    {
-      "id": 16,
-      "messages": [
-        { "sender": "Frank", "text": "Can you explain Galatians 5:22?" },
-        { "sender": "Assistant", "text": "Galatians 5:22 lists the fruits of the Spirit: love, joy, peace, patience, kindness, goodness, faithfulness, gentleness, self-control." }
-      ]
-    },
-    {
-      "id": 17,
-      "messages": [
-        { "sender": "Grace", "text": "How can I strengthen my faith?" },
-        { "sender": "Assistant", "text": "Pray regularly, study scripture, and put your faith into practice through your actions." }
-      ]
-    },
-    {
-      "id": 18,
-      "messages": [
-        { "sender": "Hank", "text": "What's a verse about peace?" },
-        { "sender": "Assistant", "text": "Philippians 4:7: 'And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.'" }
-      ]
-    },
-    {
-      "id": 19,
-      "messages": [
-        { "sender": "Ivy", "text": "Explain John 3:16." },
-        { "sender": "Assistant", "text": "John 3:16: 'For God so loved the world that He gave His only Son...' emphasizes God's love and salvation through Jesus." }
-      ]
-    },
-    {
-      "id": 20,
-      "messages": [
-        { "sender": "Jack", "text": "Give me a verse about gratitude." },
-        { "sender": "Assistant", "text": "1 Thessalonians 5:18: 'Give thanks in all circumstances; for this is God’s will for you in Christ Jesus.'"}
+        {
+          "sender_type": "USER",
+          "content": "What does the Bible teach about forgiving others?",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-21T10:11:00"
+        },
+        {
+          "sender_type": "BOT",
+          "content": "It teaches us to forgive as God forgave us (Ephesians 4:32).",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-21T10:11:40"
+        },
+        {
+          "sender_type": "USER",
+          "content": "That’s something I need to work on.",
+          "extra_metadata": {"lang": "en"},
+          "sent_at": "2025-10-21T10:12:05"
+        }
       ]
     }
   ]
-  
+}

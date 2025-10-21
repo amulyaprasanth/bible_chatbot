@@ -1,3 +1,4 @@
+import { useGoogleLogin } from "@react-oauth/google";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -13,7 +14,13 @@ interface FormData {
   confirmPassword: string;
 }
 
-export const AuthForm = () => {
+interface AuthFormProps {
+  setUser: React.Dispatch<
+    React.SetStateAction<{ id: number; name: string } | null>
+  >;
+}
+
+const AuthForm = ({ setUser }: AuthFormProps) => {
   const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState<FormData>({
@@ -34,24 +41,104 @@ export const AuthForm = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  // Helper: store token & user
+  const storeUserToken = (
+    user: { id: number; name: string; email: string },
+    token: string
+  ) => {
+    localStorage.setItem("access_token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+    setUser({ id: user.id, name: user.name });
+  };
+
+  // Check if Google OAuth is configured
+  const isGoogleOAuthEnabled =
+    import.meta.env.VITE_GOOGLE_CLIENT_ID &&
+    import.meta.env.VITE_GOOGLE_CLIENT_ID.length > 0;
+
+  // --- Google OAuth Login ---
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        // Get user info from Google
+        const userInfoRes = await axios.get(
+          "https://www.googleapis.com/oauth2/v3/userinfo",
+          {
+            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+          }
+        );
+
+        const googleUserInfo = userInfoRes.data;
+
+        // Send to our backend for verification and JWT generation
+        const authRes = await axios.post("http://localhost:8000/auth/google", {
+          token: tokenResponse.access_token,
+          userInfo: googleUserInfo,
+        });
+
+        const token = authRes.data.access_token;
+        if (!token) {
+          setError("Google authentication failed. No token received.");
+          return;
+        }
+
+        // Fetch current user from our backend
+        const userRes = await axios.get("http://localhost:8000/users/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        storeUserToken(userRes.data, token);
+        navigate("/dashboard");
+      } catch (err: any) {
+        console.error("Google auth error:", err);
+        setError(err.response?.data?.detail || "Google authentication failed");
+      }
+    },
+    onError: (error) => {
+      console.error("Google login error:", error);
+      setError("Google authentication failed");
+    },
+  });
+
+  const handleGoogleLogin = () => {
+    if (!isGoogleOAuthEnabled) {
+      setError("Google Sign-In is not configured. Please use email/password.");
+      return;
+    }
+    googleLogin();
+  };
+
   // --- Login ---
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     try {
-      const res = await axios.post("http://localhost:8000/login", {
-        username: formData.email,
-        password: formData.password,
+      // Form URL-encoded for OAuth2
+      const data = new URLSearchParams();
+      data.append("username", formData.email);
+      data.append("password", formData.password);
+
+      // 1️⃣ Get JWT token
+      const tokenRes = await axios.post("http://localhost:8000/token", data, {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
 
-      if (res.data.success) {
-        navigate("/dashboard");
-      } else {
-        setError(res.data.message || "Invalid credentials");
+      const token = tokenRes.data.access_token;
+      if (!token) {
+        setError("Login failed. No token received.");
+        return;
       }
-    } catch {
-      setError("Login failed. Please try again.");
+
+      // 2️⃣ Fetch current user
+      const userRes = await axios.get("http://localhost:8000/users/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      storeUserToken(userRes.data, token);
+      navigate("/dashboard");
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Login failed");
     }
   };
 
@@ -66,25 +153,47 @@ export const AuthForm = () => {
     }
 
     try {
-      const res = await axios.post("http://localhost:8000/signup", {
+      // 1️⃣ Create user
+      const signupRes = await axios.post("http://localhost:8000/signup", {
         name: formData.name,
         email: formData.email,
         password: formData.password,
       });
 
-      if (res.data.success) {
-        navigate("/dashboard");
-      } else {
-        setError(res.data.message || "Signup failed.");
+      if (!signupRes.data.success) {
+        setError(signupRes.data.message || "Signup failed");
+        return;
       }
-    } catch {
-      setError("Signup failed. Please try again.");
+
+      // 2️⃣ Login immediately to get token
+      const data = new URLSearchParams();
+      data.append("username", formData.email);
+      data.append("password", formData.password);
+
+      const tokenRes = await axios.post("http://localhost:8000/token", data, {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      });
+
+      const token = tokenRes.data.access_token;
+      if (!token) {
+        setError("Signup successful, but failed to generate token.");
+        return;
+      }
+
+      // 3️⃣ Fetch user info
+      const userRes = await axios.get("http://localhost:8000/users/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      storeUserToken(userRes.data, token);
+      navigate("/dashboard");
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Signup failed");
     }
   };
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
-      {/* Background images */}
       <img
         src={bgSigninLandscape}
         alt="Signin background landscape"
@@ -96,10 +205,8 @@ export const AuthForm = () => {
         className="block md:hidden absolute inset-0 w-full h-full object-cover"
       />
 
-      {/* Overlay */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
 
-      {/* Form container */}
       <div className="relative z-10 flex items-center justify-center h-full p-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 30 }}
@@ -111,23 +218,27 @@ export const AuthForm = () => {
             {isSignUp ? "Create Your Account" : "Welcome Back"}
           </h2>
 
-          {/* Google Auth */}
-          <button
-            type="button"
-            className="flex items-center justify-center w-full border border-gray-300 dark:border-gray-600 rounded-lg py-3 mb-4 hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-800"
-            onClick={() => console.log("Handle Google Auth")}
-          >
-            <FcGoogle className="mr-3 text-xl" />
-            <span className="text-gray-700 dark:text-gray-200">
-              Continue with Google
-            </span>
-          </button>
+          {/* Only show Google Sign-In if OAuth is configured */}
+          {isGoogleOAuthEnabled && (
+            <>
+              <button
+                type="button"
+                className="flex items-center justify-center w-full border border-gray-300 dark:border-gray-600 rounded-lg py-3 mb-4 hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-800"
+                onClick={() => handleGoogleLogin()}
+              >
+                <FcGoogle className="mr-3 text-xl" />
+                <span className="text-gray-700 dark:text-gray-200">
+                  Continue with Google
+                </span>
+              </button>
 
-          <div className="flex items-center justify-center my-4 text-gray-400">
-            <span className="border-b w-1/4"></span>
-            <span className="px-2">or</span>
-            <span className="border-b w-1/4"></span>
-          </div>
+              <div className="flex items-center justify-center my-4 text-gray-400">
+                <span className="border-b w-1/4"></span>
+                <span className="px-2">or</span>
+                <span className="border-b w-1/4"></span>
+              </div>
+            </>
+          )}
 
           {error && (
             <div className="bg-red-100 text-red-700 p-2 rounded mb-2 text-center">
@@ -141,7 +252,10 @@ export const AuthForm = () => {
           >
             {isSignUp && (
               <div className="flex flex-col">
-                <label htmlFor="name" className="text-gray-700 dark:text-gray-200 mb-1">
+                <label
+                  htmlFor="name"
+                  className="text-gray-700 dark:text-gray-200 mb-1"
+                >
                   Full Name
                 </label>
                 <input
@@ -157,7 +271,10 @@ export const AuthForm = () => {
             )}
 
             <div className="flex flex-col">
-              <label htmlFor="email" className="text-gray-700 dark:text-gray-200 mb-1">
+              <label
+                htmlFor="email"
+                className="text-gray-700 dark:text-gray-200 mb-1"
+              >
                 Email
               </label>
               <input
@@ -172,7 +289,10 @@ export const AuthForm = () => {
             </div>
 
             <div className="flex flex-col">
-              <label htmlFor="password" className="text-gray-700 dark:text-gray-200 mb-1">
+              <label
+                htmlFor="password"
+                className="text-gray-700 dark:text-gray-200 mb-1"
+              >
                 Password
               </label>
               <input
@@ -229,3 +349,5 @@ export const AuthForm = () => {
     </div>
   );
 };
+
+export default AuthForm;
