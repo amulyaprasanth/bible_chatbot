@@ -1,6 +1,6 @@
 import { Squash as Hamburger } from "hamburger-react";
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/react.svg";
 
 interface NavbarProps {
@@ -15,7 +15,6 @@ export const Navbar = ({ user, setUser }: NavbarProps) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const location = useLocation();
 
   const closeMenu = () => setIsOpen(false);
 
@@ -103,7 +102,7 @@ export const Navbar = ({ user, setUser }: NavbarProps) => {
                 About
               </a>
             </li>
-            <li className="mt-2 md:mt-0 relative" ref={dropdownRef}>
+            <li className="mt-2 md:mt-0 relative" >
               {user ? (
                 <div>
                   <button

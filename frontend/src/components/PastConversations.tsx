@@ -44,7 +44,7 @@ export const PastConversations = ({
       if (setSelectedConversation && conv) {
         setSelectedConversation({
           id: convId,
-          language: conv.language || "english",
+          language: (conv.language || "english") as "english" | "telugu",
         });
       }
     } catch (err) {
