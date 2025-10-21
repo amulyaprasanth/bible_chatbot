@@ -32,10 +32,13 @@ export const PastConversations = ({
   const handleClick = async (convId: number) => {
     try {
       setSelectedConvId(convId);
-      const res = await axios.get("http://localhost:8000/get_messages", {
-        params: { conv_id: convId },
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get(
+        "https://bible-chatbot-idx7.onrender.com/get_messages",
+        {
+          params: { conv_id: convId },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setMessages(res.data);
       if (setActiveConversationId) setActiveConversationId(convId);
 
@@ -55,7 +58,7 @@ export const PastConversations = ({
   const createConversation = async (language: string) => {
     try {
       const res = await axios.post(
-        "http://localhost:8000/conversations",
+        "https://bible-chatbot-idx7.onrender.com/conversations",
         { language: language.toLowerCase() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -104,9 +107,12 @@ export const PastConversations = ({
 
   const handleDeleteConversation = async (convId: number) => {
     try {
-      await axios.delete(`http://localhost:8000/conversations/${convId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.delete(
+        `https://bible-chatbot-idx7.onrender.com/conversations/${convId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       // Clear messages if the deleted conversation was selected
       if (selectedConvId === convId) {

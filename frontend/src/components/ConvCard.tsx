@@ -18,7 +18,7 @@ const ConvCard = ({ id, name, onSelect, selected = false }: ConvCardProps) => {
 
   const handleClick = async () => {
     try {
-      const res = await axios.get("http://localhost:8000/get_messages", {
+      const res = await axios.get("https://bible-chatbot-idx7.onrender.com/get_messages", {
         params: { conv_id: id },
         headers: { Authorization: `Bearer ${token}` },
       });

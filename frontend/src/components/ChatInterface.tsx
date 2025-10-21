@@ -42,7 +42,7 @@ const ChatInterface = ({
 
     try {
       const res = await axios.post(
-        "http://localhost:8000/query",
+        "https://bible-chatbot-idx7.onrender.com/query",
         {
           question: currentMessage,
           language: selectedConversation.language,

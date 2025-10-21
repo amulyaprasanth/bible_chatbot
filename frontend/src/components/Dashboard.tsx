@@ -31,7 +31,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:8000/conversations", {
+      .get("https://bible-chatbot-idx7.onrender.com/conversations", {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setConvoList(res.data))
@@ -45,7 +45,7 @@ const Dashboard = () => {
   const handleLanguageSelect = async (language: "english" | "telugu") => {
     try {
       const res = await axios.post(
-        "http://localhost:8000/conversations",
+        "https://bible-chatbot-idx7.onrender.com/conversations",
         { language },
         {
           headers: {
@@ -64,9 +64,12 @@ const Dashboard = () => {
       setShowSidebar(false);
 
       // Refresh conversations list
-      const convoRes = await axios.get("http://localhost:8000/conversations", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const convoRes = await axios.get(
+        "https://bible-chatbot-idx7.onrender.com/conversations",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setConvoList(convoRes.data);
     } catch (err) {
       console.error("Failed to create new conversation:", err);
@@ -80,7 +83,7 @@ const Dashboard = () => {
   const handleConversationUpdate = () => {
     // Refresh conversations list to get updated titles
     axios
-      .get("http://localhost:8000/conversations", {
+      .get("https://bible-chatbot-idx7.onrender.com/conversations", {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setConvoList(res.data))

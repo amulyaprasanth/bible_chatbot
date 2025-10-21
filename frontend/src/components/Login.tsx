@@ -71,7 +71,7 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
         const googleUserInfo = userInfoRes.data;
 
         // Send to our backend for verification and JWT generation
-        const authRes = await axios.post("http://localhost:8000/auth/google", {
+        const authRes = await axios.post("https://bible-chatbot-idx7.onrender.com/auth/google", {
           token: tokenResponse.access_token,
           userInfo: googleUserInfo,
         });
@@ -83,7 +83,7 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
         }
 
         // Fetch current user from our backend
-        const userRes = await axios.get("http://localhost:8000/users/me", {
+        const userRes = await axios.get("https://bible-chatbot-idx7.onrender.com/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -120,7 +120,7 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
       data.append("password", formData.password);
 
       // 1️⃣ Get JWT token
-      const tokenRes = await axios.post("http://localhost:8000/token", data, {
+      const tokenRes = await axios.post("https://bible-chatbot-idx7.onrender.com/token", data, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
 
@@ -131,7 +131,7 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
       }
 
       // 2️⃣ Fetch current user
-      const userRes = await axios.get("http://localhost:8000/users/me", {
+      const userRes = await axios.get("https://bible-chatbot-idx7.onrender.com/users/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -154,7 +154,7 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
 
     try {
       // 1️⃣ Create user
-      const signupRes = await axios.post("http://localhost:8000/signup", {
+      const signupRes = await axios.post("https://bible-chatbot-idx7.onrender.com/signup", {
         name: formData.name,
         email: formData.email,
         password: formData.password,
@@ -170,7 +170,7 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
       data.append("username", formData.email);
       data.append("password", formData.password);
 
-      const tokenRes = await axios.post("http://localhost:8000/token", data, {
+      const tokenRes = await axios.post("https://bible-chatbot-idx7.onrender.com/token", data, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
 
@@ -181,7 +181,7 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
       }
 
       // 3️⃣ Fetch user info
-      const userRes = await axios.get("http://localhost:8000/users/me", {
+      const userRes = await axios.get("https://bible-chatbot-idx7.onrender.com/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
