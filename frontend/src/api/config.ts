@@ -5,7 +5,7 @@
 
 export const API_CONFIG = {
   // Backend API base URL - automatically switches based on mode
-  BASE_URL: import.meta.env.VITE_API_URL || "http://localhost:8000",
+  BASE_URL: import.meta.env.VITE_API_URL || "https://bible-chatbot-backend.up.railway.app",
 
   // Timeout for API requests (in milliseconds)
   TIMEOUT: 30000,

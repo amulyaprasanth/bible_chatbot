@@ -24,7 +24,6 @@ export const PastConversations = ({
   onConversationUpdate,
 }: PastConversationsProps) => {
   const token = localStorage.getItem("access_token");
-  const [showLanguageSelect, setShowLanguageSelect] = useState(false);
   const [selectedConvId, setSelectedConvId] = useState<number | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(
     null
@@ -50,31 +49,6 @@ export const PastConversations = ({
       }
     } catch (err) {
       console.error("Failed to fetch messages:", err);
-    }
-  };
-
-  const createConversation = async (language: string) => {
-    try {
-      const res = await apiClient.post(
-        API_ENDPOINTS.CONVERSATIONS,
-        { language: language.toLowerCase() },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      const newConv = res.data;
-      setSelectedConvId(newConv.id);
-      if (setConversations) setConversations((prev) => [newConv, ...prev]);
-      setMessages([]);
-      if (setActiveConversationId) setActiveConversationId(newConv.id);
-      if (setSelectedConversation) {
-        setSelectedConversation({
-          id: newConv.id,
-          language: language.toLowerCase() as "english" | "telugu",
-        });
-      }
-      setShowLanguageSelect(false);
-    } catch (err) {
-      console.error("Failed to create conversation:", err);
     }
   };
 
