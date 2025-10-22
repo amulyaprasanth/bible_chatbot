@@ -18,7 +18,7 @@ app = FastAPI()
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # adjust in production
+    allow_origins=["https://biblechatbot.netlify.app","http://localhost:5173"],  # adjust in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

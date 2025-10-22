@@ -11,6 +11,12 @@ export const apiClient = axios.create({
   },
 });
 
+// Log the API configuration for debugging
+console.log(
+  `🔗 API Client initialized in ${API_CONFIG.MODE} mode`,
+  `\n📡 Backend URL: ${API_CONFIG.BASE_URL}`
+);
+
 // Request interceptor to add auth token
 const authInterceptor = (config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem("access_token");

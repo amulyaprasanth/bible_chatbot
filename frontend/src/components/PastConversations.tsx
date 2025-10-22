@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FaClock, FaComments, FaGlobe, FaPlus, FaTrash } from "react-icons/fa";
+import { FaClock, FaComments, FaTrash } from "react-icons/fa";
 import { apiClient } from "../api/axios";
 import { API_ENDPOINTS } from "../api/config";
 import type { Conversation, Message } from "./Dashboard";
@@ -138,36 +138,6 @@ export const PastConversations = ({
 
   return (
     <div className="h-full bg-gray-50 dark:bg-gray-800 flex flex-col">
-      {/* Header */}
-      <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
-        <button
-          className="w-full flex items-center justify-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-medium text-sm sm:text-base"
-          onClick={() => setShowLanguageSelect(!showLanguageSelect)}
-        >
-          <FaPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          New Chat
-        </button>
-      </div>
-
-      {/* Language Selection */}
-      {showLanguageSelect && (
-        <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="space-y-2">
-            {["English", "Telugu"].map((lang) => (
-              <button
-                key={lang}
-                className="w-full flex items-center justify-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg transition-colors font-medium text-gray-700 dark:text-gray-200 text-sm sm:text-base"
-                onClick={() => createConversation(lang)}
-                type="button"
-              >
-                <FaGlobe className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                {lang}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Conversations List */}
       <div className="flex-1 overflow-y-auto">
         {convoList.length === 0 ? (

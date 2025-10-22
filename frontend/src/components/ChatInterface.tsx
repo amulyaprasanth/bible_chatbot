@@ -103,9 +103,6 @@ const ChatInterface = ({
               <FaBars className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
           )}
-          <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-            VerseChat
-          </h1>
         </div>
         {onNewChat && (
           <button

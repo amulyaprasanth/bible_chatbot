@@ -63,7 +63,6 @@ class Message(Base):
         "conversations.id", ondelete="CASCADE"))
     sender_type = Column(String(10), nullable=False)  # USER or assistant
     content = Column(Text, nullable=False)
-    extra_metadata = Column(JSON)  # renamed from "metadata"
     sent_at = Column(DateTime, default=datetime.utcnow)
 
     conversation = relationship("Conversation", back_populates="messages")
