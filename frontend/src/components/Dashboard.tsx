@@ -1,5 +1,6 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
+import { apiClient } from "../api/axios";
+import { API_ENDPOINTS } from "../api/config";
 import ChatInterface from "./ChatInterface";
 import LanguageSelectionModal from "./LanguageSelectionModal";
 import { PastConversations } from "./PastConversations";
@@ -30,8 +31,8 @@ const Dashboard = () => {
   const [showLanguageModal, setShowLanguageModal] = useState(false);
 
   useEffect(() => {
-    axios
-      .get("https://bible-chatbot-backend.up.railway.app/conversations", {
+    apiClient
+      .get(API_ENDPOINTS.CONVERSATIONS, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setConvoList(res.data))
@@ -44,8 +45,8 @@ const Dashboard = () => {
 
   const handleLanguageSelect = async (language: "english" | "telugu") => {
     try {
-      const res = await axios.post(
-        "https://bible-chatbot-backend.up.railway.app/conversations",
+      const res = await apiClient.post(
+        API_ENDPOINTS.CONVERSATIONS,
         { language },
         {
           headers: {
@@ -64,12 +65,9 @@ const Dashboard = () => {
       setShowSidebar(false);
 
       // Refresh conversations list
-      const convoRes = await axios.get(
-        "https://bible-chatbot-backend.up.railway.app/conversations",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const convoRes = await apiClient.get(API_ENDPOINTS.CONVERSATIONS, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setConvoList(convoRes.data);
     } catch (err) {
       console.error("Failed to create new conversation:", err);
@@ -82,8 +80,8 @@ const Dashboard = () => {
 
   const handleConversationUpdate = () => {
     // Refresh conversations list to get updated titles
-    axios
-      .get("https://bible-chatbot-backend.up.railway.app/conversations", {
+    apiClient
+      .get(API_ENDPOINTS.CONVERSATIONS, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setConvoList(res.data))

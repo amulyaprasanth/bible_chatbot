@@ -1,7 +1,8 @@
-import axios from "axios";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiClient } from "../api/axios";
+import { API_ENDPOINTS } from "../api/config";
 import bgSigninLandscape from "../assets/bg_signin_landscape.jpg";
 import bgSigninPortrait from "../assets/bg_signin_portrait.jpg";
 
@@ -61,13 +62,9 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
       data.append("password", formData.password);
 
       // 1️⃣ Get JWT token
-      const tokenRes = await axios.post(
-        "https://bible-chatbot-backend.up.railway.app/token",
-        data,
-        {
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        }
-      );
+      const tokenRes = await apiClient.post(API_ENDPOINTS.TOKEN, data, {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      });
 
       const token = tokenRes.data.access_token;
       if (!token) {
@@ -76,12 +73,9 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
       }
 
       // 2️⃣ Fetch current user
-      const userRes = await axios.get(
-        "https://bible-chatbot-backend.up.railway.app/users/me",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const userRes = await apiClient.get(API_ENDPOINTS.USERS_ME, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       storeUserToken(userRes.data, token);
       navigate("/dashboard");
@@ -102,14 +96,11 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
 
     try {
       // 1️⃣ Create user
-      const signupRes = await axios.post(
-        "https://bible-chatbot-backend.up.railway.app/signup",
-        {
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        }
-      );
+      const signupRes = await apiClient.post(API_ENDPOINTS.SIGNUP, {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      });
 
       if (!signupRes.data.success) {
         setError(signupRes.data.message || "Signup failed");
@@ -121,13 +112,9 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
       data.append("username", formData.email);
       data.append("password", formData.password);
 
-      const tokenRes = await axios.post(
-        "https://bible-chatbot-backend.up.railway.app/token",
-        data,
-        {
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        }
-      );
+      const tokenRes = await apiClient.post(API_ENDPOINTS.TOKEN, data, {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      });
 
       const token = tokenRes.data.access_token;
       if (!token) {
@@ -136,12 +123,9 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
       }
 
       // 3️⃣ Fetch user info
-      const userRes = await axios.get(
-        "https://bible-chatbot-backend.up.railway.app/me",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const userRes = await apiClient.get(API_ENDPOINTS.ME, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       storeUserToken(userRes.data, token);
       navigate("/dashboard");

@@ -1,6 +1,7 @@
-import axios from "axios";
 import { useState } from "react";
 import { FaClock, FaComments, FaGlobe, FaPlus, FaTrash } from "react-icons/fa";
+import { apiClient } from "../api/axios";
+import { API_ENDPOINTS } from "../api/config";
 import type { Conversation, Message } from "./Dashboard";
 
 interface PastConversationsProps {
@@ -32,13 +33,10 @@ export const PastConversations = ({
   const handleClick = async (convId: number) => {
     try {
       setSelectedConvId(convId);
-      const res = await axios.get(
-        "https://bible-chatbot-backend.up.railway.app/get_messages",
-        {
-          params: { conv_id: convId },
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await apiClient.get(API_ENDPOINTS.GET_MESSAGES, {
+        params: { conv_id: convId },
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setMessages(res.data);
       if (setActiveConversationId) setActiveConversationId(convId);
 
@@ -57,8 +55,8 @@ export const PastConversations = ({
 
   const createConversation = async (language: string) => {
     try {
-      const res = await axios.post(
-        "https://bible-chatbot-backend.up.railway.app/conversations",
+      const res = await apiClient.post(
+        API_ENDPOINTS.CONVERSATIONS,
         { language: language.toLowerCase() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -107,12 +105,9 @@ export const PastConversations = ({
 
   const handleDeleteConversation = async (convId: number) => {
     try {
-      await axios.delete(
-        `https://bible-chatbot-backend.up.railway.app/conversations/${convId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await apiClient.delete(`${API_ENDPOINTS.CONVERSATIONS}/${convId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       // Clear messages if the deleted conversation was selected
       if (selectedConvId === convId) {

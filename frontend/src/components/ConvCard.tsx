@@ -1,4 +1,5 @@
-import axios from "axios";
+import { apiClient } from "../api/axios";
+import { API_ENDPOINTS } from "../api/config";
 
 interface Messages {
   conv_id: number;
@@ -18,7 +19,7 @@ const ConvCard = ({ id, name, onSelect, selected = false }: ConvCardProps) => {
 
   const handleClick = async () => {
     try {
-      const res = await axios.get("https://bible-chatbot-backend.up.railway.app/get_messages", {
+      const res = await apiClient.get(API_ENDPOINTS.GET_MESSAGES, {
         params: { conv_id: id },
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -1,7 +1,8 @@
-import axios from "axios";
 import { useState } from "react";
 import { FaBars, FaPlus, FaRobot, FaUserCircle } from "react-icons/fa";
 import { FiSend } from "react-icons/fi";
+import { apiClient } from "../api/axios";
+import { API_ENDPOINTS } from "../api/config";
 import type { Message } from "./Dashboard";
 
 interface ChatInterfaceProps {
@@ -41,8 +42,8 @@ const ChatInterface = ({
     setIsLoading(true);
 
     try {
-      const res = await axios.post(
-        "https://bible-chatbot-idx7.onrender.com/query",
+      const res = await apiClient.post(
+        API_ENDPOINTS.QUERY,
         {
           question: currentMessage,
           language: selectedConversation.language,
