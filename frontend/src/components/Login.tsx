@@ -1,8 +1,6 @@
-import { useGoogleLogin } from "@react-oauth/google";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { FcGoogle } from "react-icons/fc";
 import { useNavigate } from "react-router-dom";
 import bgSigninLandscape from "../assets/bg_signin_landscape.jpg";
 import bgSigninPortrait from "../assets/bg_signin_portrait.jpg";
@@ -51,63 +49,6 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
     setUser({ id: user.id, name: user.name });
   };
 
-  // Check if Google OAuth is configured
-  const isGoogleOAuthEnabled =
-    import.meta.env.VITE_GOOGLE_CLIENT_ID &&
-    import.meta.env.VITE_GOOGLE_CLIENT_ID.length > 0;
-
-  // --- Google OAuth Login ---
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        // Get user info from Google
-        const userInfoRes = await axios.get(
-          "https://www.googleapis.com/oauth2/v3/userinfo",
-          {
-            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-          }
-        );
-
-        const googleUserInfo = userInfoRes.data;
-
-        // Send to our backend for verification and JWT generation
-        const authRes = await axios.post("https://bible-chatbot-idx7.onrender.com/auth/google", {
-          token: tokenResponse.access_token,
-          userInfo: googleUserInfo,
-        });
-
-        const token = authRes.data.access_token;
-        if (!token) {
-          setError("Google authentication failed. No token received.");
-          return;
-        }
-
-        // Fetch current user from our backend
-        const userRes = await axios.get("https://bible-chatbot-idx7.onrender.com/users/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        storeUserToken(userRes.data, token);
-        navigate("/dashboard");
-      } catch (err: any) {
-        console.error("Google auth error:", err);
-        setError(err.response?.data?.detail || "Google authentication failed");
-      }
-    },
-    onError: (error) => {
-      console.error("Google login error:", error);
-      setError("Google authentication failed");
-    },
-  });
-
-  const handleGoogleLogin = () => {
-    if (!isGoogleOAuthEnabled) {
-      setError("Google Sign-In is not configured. Please use email/password.");
-      return;
-    }
-    googleLogin();
-  };
-
   // --- Login ---
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,9 +61,13 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
       data.append("password", formData.password);
 
       // 1️⃣ Get JWT token
-      const tokenRes = await axios.post("https://bible-chatbot-idx7.onrender.com/token", data, {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      });
+      const tokenRes = await axios.post(
+        "https://bible-chatbot-idx7.onrender.com/token",
+        data,
+        {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        }
+      );
 
       const token = tokenRes.data.access_token;
       if (!token) {
@@ -131,9 +76,12 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
       }
 
       // 2️⃣ Fetch current user
-      const userRes = await axios.get("https://bible-chatbot-idx7.onrender.com/users/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const userRes = await axios.get(
+        "https://bible-chatbot-idx7.onrender.com/users/me",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       storeUserToken(userRes.data, token);
       navigate("/dashboard");
@@ -154,11 +102,14 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
 
     try {
       // 1️⃣ Create user
-      const signupRes = await axios.post("https://bible-chatbot-idx7.onrender.com/signup", {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-      });
+      const signupRes = await axios.post(
+        "https://bible-chatbot-idx7.onrender.com/signup",
+        {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        }
+      );
 
       if (!signupRes.data.success) {
         setError(signupRes.data.message || "Signup failed");
@@ -170,9 +121,13 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
       data.append("username", formData.email);
       data.append("password", formData.password);
 
-      const tokenRes = await axios.post("https://bible-chatbot-idx7.onrender.com/token", data, {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      });
+      const tokenRes = await axios.post(
+        "https://bible-chatbot-idx7.onrender.com/token",
+        data,
+        {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        }
+      );
 
       const token = tokenRes.data.access_token;
       if (!token) {
@@ -181,9 +136,12 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
       }
 
       // 3️⃣ Fetch user info
-      const userRes = await axios.get("https://bible-chatbot-idx7.onrender.com/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const userRes = await axios.get(
+        "https://bible-chatbot-idx7.onrender.com/me",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       storeUserToken(userRes.data, token);
       navigate("/dashboard");
@@ -217,28 +175,6 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 text-center tracking-wide">
             {isSignUp ? "Create Your Account" : "Welcome Back"}
           </h2>
-
-          {/* Only show Google Sign-In if OAuth is configured */}
-          {isGoogleOAuthEnabled && (
-            <>
-              <button
-                type="button"
-                className="flex items-center justify-center w-full border border-gray-300 dark:border-gray-600 rounded-lg py-3 mb-4 hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-800"
-                onClick={() => handleGoogleLogin()}
-              >
-                <FcGoogle className="mr-3 text-xl" />
-                <span className="text-gray-700 dark:text-gray-200">
-                  Continue with Google
-                </span>
-              </button>
-
-              <div className="flex items-center justify-center my-4 text-gray-400">
-                <span className="border-b w-1/4"></span>
-                <span className="px-2">or</span>
-                <span className="border-b w-1/4"></span>
-              </div>
-            </>
-          )}
 
           {error && (
             <div className="bg-red-100 text-red-700 p-2 rounded mb-2 text-center">

@@ -15,11 +15,9 @@ RUN npm ci
 COPY . .
 
 # Build arguments for environment variables
-ARG VITE_GOOGLE_CLIENT_ID
 ARG VITE_API_URL=http://localhost:8000
 
 # Set environment variables
-ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 ENV VITE_API_URL=$VITE_API_URL
 
 # Build the app

@@ -1,4 +1,3 @@
-import { GoogleOAuthProvider } from "@react-oauth/google";
 import { useEffect, useState } from "react";
 import {
   Navigate,
@@ -11,9 +10,6 @@ import { Home } from "./components/Home.tsx";
 import AuthForm from "./components/Login.tsx";
 import { Navbar } from "./components/Navbar.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
-
-// Get Google Client ID from environment variable
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 function App() {
   const [user, setUser] = useState<{ id: number; name: string } | null>(null);
@@ -40,41 +36,39 @@ function App() {
   }
 
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID || "dummy-client-id"}>
-      <Router>
-        <Navbar user={user} setUser={setUser} />
-        <Routes>
-          <Route
-            path="/"
-            element={
-              localStorage.getItem("access_token") ? (
-                <Navigate to="/dashboard" replace />
-              ) : (
-                <Home />
-              )
-            }
-          />
-          <Route
-            path="/signin"
-            element={
-              localStorage.getItem("access_token") ? (
-                <Navigate to="/dashboard" replace />
-              ) : (
-                <AuthForm setUser={setUser} />
-              )
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </Router>
-    </GoogleOAuthProvider>
+    <Router>
+      <Navbar user={user} setUser={setUser} />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            localStorage.getItem("access_token") ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <Home />
+            )
+          }
+        />
+        <Route
+          path="/signin"
+          element={
+            localStorage.getItem("access_token") ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <AuthForm setUser={setUser} />
+            )
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 
