@@ -277,10 +277,10 @@ Title:"""
 if __name__ == "__main__":
     try:
         # English Bible
-        logger.info("Building vector store for English Bible...")
-        english_assistant = BibleAssistant(language="english")
-        english_assistant.build_vector_store()
-        logger.info("✅ English Bible vector store uploaded successfully.\n")
+        # logger.info("Building vector store for English Bible...")
+        # english_assistant = BibleAssistant(language="english")
+        # english_assistant.build_vector_store()
+        # logger.info("✅ English Bible vector store uploaded successfully.\n")
 
         # Telugu Bible
         logger.info("Building vector store for Telugu Bible...")
