@@ -15,7 +15,6 @@ export const API_ENDPOINTS = {
   TOKEN: "/token",
   SIGNUP: "/signup",
   USERS_ME: "/users/me",
-  ME: "/me",
 
   // Conversation endpoints
   CONVERSATIONS: "/conversations",

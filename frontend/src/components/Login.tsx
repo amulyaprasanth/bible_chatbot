@@ -123,7 +123,7 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
       }
 
       // 3️⃣ Fetch user info
-      const userRes = await apiClient.get(API_ENDPOINTS.ME, {
+      const userRes = await apiClient.get(API_ENDPOINTS.USERS_ME, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
