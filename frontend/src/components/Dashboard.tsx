@@ -31,7 +31,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     axios
-      .get("https://bible-chatbot-idx7.onrender.com/conversations", {
+      .get("https://bible-chatbot-backend.up.railway.app/conversations", {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setConvoList(res.data))
@@ -45,7 +45,7 @@ const Dashboard = () => {
   const handleLanguageSelect = async (language: "english" | "telugu") => {
     try {
       const res = await axios.post(
-        "https://bible-chatbot-idx7.onrender.com/conversations",
+        "https://bible-chatbot-backend.up.railway.app/conversations",
         { language },
         {
           headers: {
@@ -65,7 +65,7 @@ const Dashboard = () => {
 
       // Refresh conversations list
       const convoRes = await axios.get(
-        "https://bible-chatbot-idx7.onrender.com/conversations",
+        "https://bible-chatbot-backend.up.railway.app/conversations",
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -83,7 +83,7 @@ const Dashboard = () => {
   const handleConversationUpdate = () => {
     // Refresh conversations list to get updated titles
     axios
-      .get("https://bible-chatbot-idx7.onrender.com/conversations", {
+      .get("https://bible-chatbot-backend.up.railway.app/conversations", {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setConvoList(res.data))

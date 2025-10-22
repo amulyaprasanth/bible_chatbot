@@ -33,7 +33,7 @@ export const PastConversations = ({
     try {
       setSelectedConvId(convId);
       const res = await axios.get(
-        "https://bible-chatbot-idx7.onrender.com/get_messages",
+        "https://bible-chatbot-backend.up.railway.app/get_messages",
         {
           params: { conv_id: convId },
           headers: { Authorization: `Bearer ${token}` },
@@ -58,7 +58,7 @@ export const PastConversations = ({
   const createConversation = async (language: string) => {
     try {
       const res = await axios.post(
-        "https://bible-chatbot-idx7.onrender.com/conversations",
+        "https://bible-chatbot-backend.up.railway.app/conversations",
         { language: language.toLowerCase() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -108,7 +108,7 @@ export const PastConversations = ({
   const handleDeleteConversation = async (convId: number) => {
     try {
       await axios.delete(
-        `https://bible-chatbot-idx7.onrender.com/conversations/${convId}`,
+        `https://bible-chatbot-backend.up.railway.app/conversations/${convId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

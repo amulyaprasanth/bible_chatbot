@@ -62,7 +62,7 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
 
       // 1️⃣ Get JWT token
       const tokenRes = await axios.post(
-        "https://bible-chatbot-idx7.onrender.com/token",
+        "https://bible-chatbot-backend.up.railway.app/token",
         data,
         {
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -77,7 +77,7 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
 
       // 2️⃣ Fetch current user
       const userRes = await axios.get(
-        "https://bible-chatbot-idx7.onrender.com/users/me",
+        "https://bible-chatbot-backend.up.railway.app/users/me",
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -103,7 +103,7 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
     try {
       // 1️⃣ Create user
       const signupRes = await axios.post(
-        "https://bible-chatbot-idx7.onrender.com/signup",
+        "https://bible-chatbot-backend.up.railway.app/signup",
         {
           name: formData.name,
           email: formData.email,
@@ -122,7 +122,7 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
       data.append("password", formData.password);
 
       const tokenRes = await axios.post(
-        "https://bible-chatbot-idx7.onrender.com/token",
+        "https://bible-chatbot-backend.up.railway.app/token",
         data,
         {
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -137,7 +137,7 @@ const AuthForm = ({ setUser }: AuthFormProps) => {
 
       // 3️⃣ Fetch user info
       const userRes = await axios.get(
-        "https://bible-chatbot-idx7.onrender.com/me",
+        "https://bible-chatbot-backend.up.railway.app/me",
         {
           headers: { Authorization: `Bearer ${token}` },
         }
