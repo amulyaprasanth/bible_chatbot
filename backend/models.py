@@ -20,10 +20,6 @@ class SignUpRequest(BaseModel):
     password: str
 
 
-class GoogleAuthRequest(BaseModel):
-    token: str  # Google ID token
-
-
 # -----------------------------------------------------
 # SQLAlchemy Models
 # -----------------------------------------------------
@@ -34,12 +30,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, index=True, nullable=False)
-    # Nullable for OAuth users
-    password_hash = Column(String(256), nullable=True)
-    auth_provider = Column(String(20), default="local",
-                           nullable=False)  # local, google
-    google_id = Column(String(100), unique=True,
-                       nullable=True)  # Google user ID
+    password_hash = Column(String(256), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # relationships

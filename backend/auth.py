@@ -7,9 +7,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from jwt.exceptions import InvalidTokenError
 from database import get_db
-from models import GoogleAuthRequest, Token, TokenData, User
-from google.oauth2 import id_token
-from google.auth.transport import requests
+from models import Token, TokenData, User
 
 import os
 from dotenv import load_dotenv
@@ -19,7 +17,6 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY", "supersecret")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 router = APIRouter(tags=["Auth"])
@@ -34,9 +31,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def authenticate_user(db: Session, email: str, password: str):
     user = db.query(User).filter(User.email == email).first()
     if not user:
-        return None
-    # Skip password check for OAuth users
-    if user.auth_provider != "local":
         return None
     if not user.password_hash or not verify_password(password, user.password_hash):
         return None
@@ -92,68 +86,3 @@ def login_for_access_token(
 
     access_token = create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
-
-
-# --- Google OAuth endpoint ---
-@router.post("/auth/google", response_model=Token)
-def google_auth(
-    auth_data: dict,
-    db: Session = Depends(get_db)
-):
-    try:
-        # Extract user info from the request (sent from frontend)
-        user_info = auth_data.get('userInfo')
-
-        if not user_info:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Missing user information"
-            )
-
-        google_id = user_info.get('sub')
-        email = user_info.get('email')
-        name = user_info.get('name', email.split('@')[0] if email else 'User')
-
-        if not email or not google_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid user information"
-            )
-
-        # Check if user exists
-        user = db.query(User).filter(User.email == email).first()
-
-        if user:
-            # Update existing user if they were local auth and now using Google
-            if user.auth_provider == "local":
-                user.auth_provider = "google"
-                user.google_id = google_id
-                db.commit()
-            # Update google_id if it changed or wasn't set
-            elif not user.google_id or user.google_id != google_id:
-                user.google_id = google_id
-                db.commit()
-        else:
-            # Create new user
-            user = User(
-                name=name,
-                email=email,
-                auth_provider="google",
-                google_id=google_id,
-                password_hash=None
-            )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-
-        # Create access token
-        access_token = create_access_token(data={"sub": user.email})
-        return {"access_token": access_token, "token_type": "bearer"}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Authentication failed: {str(e)}"
-        )
