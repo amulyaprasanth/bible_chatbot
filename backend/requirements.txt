@@ -4,10 +4,7 @@ langchain-community
 langchain-huggingface
 langchain-groq
 langchain-astradb
-
--f https://download.pytorch.org/whl/torch_stable.html
-torch==2.9.0+cpu
-
+torch
 sentence-transformers
 huggingface-hub
 astrapy
