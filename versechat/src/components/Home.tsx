@@ -1,15 +1,10 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import bgHomeLandscape from "../assets/bg_home_landscape.jpg";
 import bgHomePortrait from "../assets/bg_home_portrait.jpg";
 
 export const Home = () => {
-  const handleTryItOut = () => {
-    // You can navigate to the chat page or open a modal here
-    console.log("Try it out clicked!");
-    // Example: navigate to chat page
-    // window.location.href = "/chat";
-  };
-
+  const navigate = useNavigate();
   return (
     <div className="w-screen min-h-screen overflow-auto relative">
       {/* Background Images */}
@@ -55,7 +50,7 @@ export const Home = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1, ease: "easeOut" }}
-          onClick={handleTryItOut}
+          onClick={() => navigate("/login")}
           className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 px-8 sm:py-4 sm:px-12 rounded-full text-lg sm:text-xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 mb-8 sm:mb-12 border-2 border-white/20"
         >
           Try It Out
