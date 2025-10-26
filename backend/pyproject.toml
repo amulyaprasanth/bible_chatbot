@@ -25,7 +25,9 @@ dependencies = [
     "langchain-text-splitters (>=1.0.0,<2.0.0)",
     "wikipedia (>=1.4.0,<2.0.0)",
     "duckduckgo-search (>=8.1.1,<9.0.0)",
-    "ddgs (>=9.6.1,<10.0.0)"
+    "ddgs (>=9.6.1,<10.0.0)",
+    "cryptography (>=46.0.3,<47.0.0)",
+    "google-auth-oauthlib (>=1.2.2,<2.0.0)"
 ]
 
 

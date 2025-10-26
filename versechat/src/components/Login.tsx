@@ -1,4 +1,5 @@
 import { useGoogleLogin } from "@react-oauth/google";
+import axios from "axios";
 import { motion } from "framer-motion";
 import React, { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
@@ -13,26 +14,16 @@ interface FormData {
   confirmPassword: string;
 }
 
-const Login = () => {
-  const [isSignup, setIsSignup] = useState<boolean>(false);
+export interface LoginProps {
+  setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+const Login = ({ setIsAuthenticated }: LoginProps) => {
+  const [isSignup, setIsSignup] = useState(false);
+  const [loading, setLoading] = useState(false); // ✅ Loading state
   const navigate = useNavigate();
 
-  const toggleForm = () => {
-    setIsSignup(!isSignup);
-  };
-
-  const handleLogin = () => {
-    console.log("Signin button clicked");
-  };
-
-  const handleSignup = () => {
-    console.log("Signup button clicked");
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
+  const toggleForm = () => setIsSignup(!isSignup);
 
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
@@ -41,15 +32,32 @@ const Login = () => {
     confirmPassword: "",
   });
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
   const login = useGoogleLogin({
     onSuccess: (codeResponse) => {
-      console.log(codeResponse);
-      navigate("/dashboard");
+      setLoading(true);
+      axios
+        .post("http://localhost:8000/auth/google", codeResponse)
+        .then((res) => {
+          if (res.status === 200) {
+            localStorage.setItem("token", res.data.access_token);
+            setIsAuthenticated(true);
+            navigate("/dashboard", { replace: true });
+          } else {
+            console.error("Login failed with status:", res.status);
+          }
+        })
+        .catch((err) => console.error("Error during login request:", err))
+        .finally(() => setLoading(false)); // hide loading spinner
     },
-
-    onError: (error) => console.log("Login Failed:", error),
     flow: "auth-code",
+    onError: (error) => console.log("Login Failed:", error),
   });
+
   return (
     <div className="w-screen min-h-screen overflow-auto relative">
       {/* Background Images */}
@@ -64,6 +72,14 @@ const Login = () => {
         className="block md:hidden fixed inset-0 w-full h-full object-cover"
       />
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="w-16 h-16 border-4 border-t-indigo-500 border-gray-200 rounded-full animate-spin"></div>
+        </div>
+      )}
+
       <div className="relative flex items-center justify-center h-screen p-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 30 }}
@@ -74,81 +90,66 @@ const Login = () => {
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 text-center tracking-wide">
             {isSignup ? "Create Your Account" : "Welcome Back"}
           </h2>
+
           <form
-            onSubmit={isSignup ? handleSignup : handleLogin}
             className="flex flex-col gap-4"
+            onSubmit={(e) => e.preventDefault()}
           >
             {isSignup && (
               <div className="flex flex-col">
-                <label
-                  htmlFor="name"
-                  className="text-gray-700 dark:text-gray-200 mb-1"
-                >
+                <label htmlFor="fullName" className="text-gray-700 dark:text-gray-200 mb-1">
                   Full Name
                 </label>
                 <input
-                  id="name"
                   type="text"
-                  name="name"
-                  placeholder="Your Name"
+                  name="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
+                  placeholder="Your Name"
                   className="p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition"
                 />
               </div>
             )}
 
             <div className="flex flex-col">
-              <label
-                htmlFor="email"
-                className="text-gray-700 dark:text-gray-200 mb-1"
-              >
+              <label htmlFor="email" className="text-gray-700 dark:text-gray-200 mb-1">
                 Email
               </label>
               <input
-                id="email"
                 type="email"
                 name="email"
-                placeholder="email@example.com"
                 value={formData.email}
                 onChange={handleChange}
+                placeholder="email@example.com"
                 className="p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition"
               />
             </div>
 
             <div className="flex flex-col">
-              <label
-                htmlFor="password"
-                className="text-gray-700 dark:text-gray-200 mb-1"
-              >
+              <label htmlFor="password" className="text-gray-700 dark:text-gray-200 mb-1">
                 Password
               </label>
               <input
-                id="password"
                 type="password"
                 name="password"
-                placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
+                placeholder="Password"
                 className="p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition"
               />
             </div>
 
             {isSignup && (
               <div className="flex flex-col">
-                <label
-                  htmlFor="confirmPassword"
-                  className="text-gray-700 dark:text-gray-200 mb-1"
-                >
+                <label htmlFor="confirmPassword" className="text-gray-700 dark:text-gray-200 mb-1">
                   Confirm Password
                 </label>
                 <input
-                  id="confirmPassword"
                   type="password"
                   name="confirmPassword"
-                  placeholder="Confirm Password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
+                  placeholder="Confirm Password"
                   className="p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition"
                 />
               </div>
@@ -173,10 +174,11 @@ const Login = () => {
             </button>
             <button
               onClick={() => login()}
-              className="mt-3 flex items-center justify-center w-full gap-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 py-3 font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-sm"
+              disabled={loading} // prevent multiple clicks
+              className="mt-3 flex items-center justify-center w-full gap-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 py-3 font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FcGoogle className="text-xl" />
-              Continue with Google
+              {loading ? "Signing in..." : "Continue with Google"}
             </button>
           </p>
         </motion.div>
