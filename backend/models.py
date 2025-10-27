@@ -76,7 +76,7 @@ class GoogleTokenRequest(BaseModel):
     code: str
     client_id: str
     client_secret: str
-    redirect_uri: list[str]
+    redirect_uri: str
     grant_type: str = "authorization_code"
 
 

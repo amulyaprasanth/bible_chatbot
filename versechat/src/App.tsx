@@ -1,6 +1,12 @@
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { useState } from "react";
-import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { useEffect, useState } from "react";
+import {
+  Navigate,
+  Route,
+  BrowserRouter as Router,
+  Routes,
+} from "react-router-dom";
+import api from "./api/axios";
 import "./App.css";
 import Dashboard from "./components/Dashboard";
 import { Home } from "./components/Home";
@@ -8,9 +14,14 @@ import Login from "./components/Login";
 import { ProtectedRoutes } from "./components/PrivateRoutes";
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    Boolean(localStorage.getItem("token"))
-  );
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    api
+      .get("/auth/check")
+      .then(() => setIsAuthenticated(true))
+      .catch(() => setIsAuthenticated(false));
+  }, []);
 
   return (
     <Router>

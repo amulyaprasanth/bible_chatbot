@@ -1,9 +1,9 @@
 import { useGoogleLogin } from "@react-oauth/google";
-import axios from "axios";
 import { motion } from "framer-motion";
 import React, { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { useNavigate } from "react-router-dom";
+import api from "../api/axios";
 import bgSigninLandscape from "../assets/bg_signin_landscape.jpg";
 import bgSigninPortrait from "../assets/bg_signin_portrait.jpg";
 
@@ -40,19 +40,20 @@ const Login = ({ setIsAuthenticated }: LoginProps) => {
   const login = useGoogleLogin({
     onSuccess: (codeResponse) => {
       setLoading(true);
-      axios
-        .post("http://localhost:8000/auth/google", codeResponse)
+      api
+        .post("/auth/google", codeResponse)
         .then((res) => {
           if (res.status === 200) {
-            localStorage.setItem("token", res.data.access_token);
             setIsAuthenticated(true);
             navigate("/dashboard", { replace: true });
-          } else {
-            console.error("Login failed with status:", res.status);
           }
         })
-        .catch((err) => console.error("Error during login request:", err))
-        .finally(() => setLoading(false)); // hide loading spinner
+        .catch((err) => {
+          console.error("Login error:", err);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     },
     flow: "auth-code",
     onError: (error) => console.log("Login Failed:", error),
@@ -97,7 +98,10 @@ const Login = ({ setIsAuthenticated }: LoginProps) => {
           >
             {isSignup && (
               <div className="flex flex-col">
-                <label htmlFor="fullName" className="text-gray-700 dark:text-gray-200 mb-1">
+                <label
+                  htmlFor="fullName"
+                  className="text-gray-700 dark:text-gray-200 mb-1"
+                >
                   Full Name
                 </label>
                 <input
@@ -112,7 +116,10 @@ const Login = ({ setIsAuthenticated }: LoginProps) => {
             )}
 
             <div className="flex flex-col">
-              <label htmlFor="email" className="text-gray-700 dark:text-gray-200 mb-1">
+              <label
+                htmlFor="email"
+                className="text-gray-700 dark:text-gray-200 mb-1"
+              >
                 Email
               </label>
               <input
@@ -126,7 +133,10 @@ const Login = ({ setIsAuthenticated }: LoginProps) => {
             </div>
 
             <div className="flex flex-col">
-              <label htmlFor="password" className="text-gray-700 dark:text-gray-200 mb-1">
+              <label
+                htmlFor="password"
+                className="text-gray-700 dark:text-gray-200 mb-1"
+              >
                 Password
               </label>
               <input
@@ -141,7 +151,10 @@ const Login = ({ setIsAuthenticated }: LoginProps) => {
 
             {isSignup && (
               <div className="flex flex-col">
-                <label htmlFor="confirmPassword" className="text-gray-700 dark:text-gray-200 mb-1">
+                <label
+                  htmlFor="confirmPassword"
+                  className="text-gray-700 dark:text-gray-200 mb-1"
+                >
                   Confirm Password
                 </label>
                 <input
