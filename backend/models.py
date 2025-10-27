@@ -3,6 +3,8 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from db import Base
 from pydantic import BaseModel
+from datetime import datetime
+from typing import Optional
 
 # ----------------------------------------------------
 # Database Models
@@ -12,6 +14,7 @@ from pydantic import BaseModel
 class User(Base):
     __tablename__ = "users"
 
+    # ... your existing fields ...
     id = Column(BigInteger, primary_key=True, autoincrement=True, index=True)
     name = Column(String(255), nullable=False)
     email = Column(String(255), nullable=False, unique=True, index=True)
@@ -23,8 +26,16 @@ class User(Base):
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
     updated_at = Column(TIMESTAMP, server_default=func.now(),
                         onupdate=func.now(), nullable=False)
+    google_refresh_token = Column(
+        String, nullable=True)  # You already have this
 
-    # One user can have many conversations
+    # === ADD THESE TWO NEW FIELDS ===
+    # NEW: Store Google access token
+    google_access_token = Column(String, nullable=True)
+    # NEW: Track when token expires
+    google_token_expiry = Column(TIMESTAMP, nullable=True)
+
+    # ... your relationships ...
     conversations = relationship(
         "Conversation", back_populates="user", cascade="all, delete"
     )
@@ -80,10 +91,25 @@ class GoogleTokenRequest(BaseModel):
     grant_type: str = "authorization_code"
 
 
+class UserResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    profile_picture: Optional[str] = None
+    email_verified: bool = True
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# Update your GoogleTokenResponse to handle optional refresh token
+
+
 class GoogleTokenResponse(BaseModel):
     access_token: str
     expires_in: int
-    refresh_token: str
+    refresh_token: Optional[str] = None  # Make this optional
     scope: str
     token_type: str
     id_token: str

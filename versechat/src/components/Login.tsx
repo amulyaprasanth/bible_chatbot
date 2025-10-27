@@ -15,12 +15,17 @@ interface FormData {
 }
 
 export interface LoginProps {
-  setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean | null>>;
+  setUser: React.Dispatch<React.SetStateAction<UserDetails | null>>;
 }
 
-const Login = ({ setIsAuthenticated }: LoginProps) => {
+export interface UserDetails {
+  name: string;
+  profile_picture: string;
+}
+const Login = ({ setIsAuthenticated, setUser }: LoginProps) => {
   const [isSignup, setIsSignup] = useState(false);
-  const [loading, setLoading] = useState(false); // ✅ Loading state
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const toggleForm = () => setIsSignup(!isSignup);
@@ -44,8 +49,12 @@ const Login = ({ setIsAuthenticated }: LoginProps) => {
         .post("/auth/google", codeResponse)
         .then((res) => {
           if (res.status === 200) {
+            setUser(res.data);
             setIsAuthenticated(true);
-            navigate("/dashboard", { replace: true });
+            // Use setTimeout to ensure state updates are processed before navigation
+            setTimeout(() => {
+              navigate("/dashboard", { replace: true });
+            }, 0);
           }
         })
         .catch((err) => {

@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap");
+
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -9,6 +11,10 @@
 }
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+.font-poppins {
+  font-family: "Poppins", sans-serif;
 }
 
 @keyframes logo-spin {
