@@ -1,14 +1,13 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { FaUserCircle } from "react-icons/fa";
 import api from "../api/axios";
+import { AuthContext } from "../context/AuthContext";
 import ChatContainer from "./chatContainer";
 import Conversations from "./Conversations";
 
-interface DashboardProps {
-  user: { name: string; profile_picture: string } | null;
-}
-
-const Dashboard = ({ user }: DashboardProps) => {
+const Dashboard = () => {
+  const authContext = useContext(AuthContext);
+  const user = authContext.user;
   const [showMenu, setShowMenu] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -26,6 +25,7 @@ const Dashboard = ({ user }: DashboardProps) => {
           .replace(/^ +/, "")
           .replace(/=.*/, `=;expires=${new Date(0).toUTCString()};path=/`);
       }
+      localStorage.removeItem("isAuthenticated");
       globalThis.location.href = "/login";
     } catch (err) {
       console.error("Logout failed:", err);
@@ -120,7 +120,7 @@ const Dashboard = ({ user }: DashboardProps) => {
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0F172A]">
-          <ChatContainer />
+          <ChatContainer user={user} />
         </div>
       </div>
     </div>

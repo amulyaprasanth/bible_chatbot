@@ -1,11 +1,12 @@
 import { useGoogleLogin } from "@react-oauth/google";
 import { motion } from "framer-motion";
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import bgSigninLandscape from "../assets/bg_signin_landscape.jpg";
 import bgSigninPortrait from "../assets/bg_signin_portrait.jpg";
+import { AuthContext } from "../context/AuthContext";
 
 interface FormData {
   fullName: string;
@@ -14,16 +15,8 @@ interface FormData {
   confirmPassword: string;
 }
 
-export interface LoginProps {
-  setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean | null>>;
-  setUser: React.Dispatch<React.SetStateAction<UserDetails | null>>;
-}
-
-export interface UserDetails {
-  name: string;
-  profile_picture: string;
-}
-const Login = ({ setIsAuthenticated, setUser }: LoginProps) => {
+const Login = () => {
+  const { setIsAuthenticated, setUser } = useContext(AuthContext);
   const [isSignup, setIsSignup] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -43,26 +36,27 @@ const Login = ({ setIsAuthenticated, setUser }: LoginProps) => {
   };
 
   const login = useGoogleLogin({
-    onSuccess: (codeResponse) => {
-      setLoading(true);
-      api
-        .post("/auth/google", codeResponse)
-        .then((res) => {
-          if (res.status === 200) {
-            setUser(res.data);
-            setIsAuthenticated(true);
-            // Use setTimeout to ensure state updates are processed before navigation
-            setTimeout(() => {
-              navigate("/dashboard", { replace: true });
-            }, 0);
-          }
-        })
-        .catch((err) => {
-          console.error("Login error:", err);
-        })
-        .finally(() => {
-          setLoading(false);
+    onSuccess: async (codeResponse) => {
+      try {
+        setLoading(true);
+
+        const res = await api.post("/auth/google", codeResponse, {
+          withCredentials: true,
         });
+
+        if (res.status === 200) {
+          // ✅ Update AuthContext directly
+          setUser(res.data.user || res.data);
+          setIsAuthenticated(true);
+
+          // Navigate after context update
+          navigate("/dashboard", { replace: true });
+        }
+      } catch (err) {
+        console.error("Login error:", err);
+      } finally {
+        setLoading(false);
+      }
     },
     flow: "auth-code",
     onError: (error) => console.log("Login Failed:", error),
