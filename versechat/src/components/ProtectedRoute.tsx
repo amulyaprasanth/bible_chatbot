@@ -2,7 +2,7 @@ import { useContext } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
-export const ProtectedRoutes = () => {
+export const ProtectedRoute = () => {
   const { isAuthenticated } = useContext(AuthContext);
 
   // Wait until auth check finishes

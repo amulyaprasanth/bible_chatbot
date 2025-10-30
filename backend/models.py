@@ -113,3 +113,13 @@ class GoogleTokenResponse(BaseModel):
     scope: str
     token_type: str
     id_token: str
+
+
+class AgentQueryRequest(BaseModel):
+    conv_id: int
+    query: str
+
+class AgentQueryResponse(BaseModel):
+    conv_id: int
+    sender_type: str
+    content: str

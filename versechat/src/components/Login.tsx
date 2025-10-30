@@ -36,27 +36,28 @@ const Login = () => {
   };
 
   const login = useGoogleLogin({
-    onSuccess: async (codeResponse) => {
-      try {
-        setLoading(true);
+    onSuccess: (codeResponse) => {
+      setLoading(true);
+      void (async () => {
+        try {
+          const res = await api.post("/auth/google", codeResponse, {
+            withCredentials: true,
+          });
 
-        const res = await api.post("/auth/google", codeResponse, {
-          withCredentials: true,
-        });
+          if (res.status === 200) {
+            // ✅ Update AuthContext directly
+            setUser(res.data.user);
+            setIsAuthenticated(true);
 
-        if (res.status === 200) {
-          // ✅ Update AuthContext directly
-          setUser(res.data.user || res.data);
-          setIsAuthenticated(true);
-
-          // Navigate after context update
-          navigate("/dashboard", { replace: true });
+            // Navigate after context update
+            navigate("/dashboard", { replace: true });
+          }
+        } catch (err) {
+          console.error("Login error:", err);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error("Login error:", err);
-      } finally {
-        setLoading(false);
-      }
+      })();
     },
     flow: "auth-code",
     onError: (error) => console.log("Login Failed:", error),

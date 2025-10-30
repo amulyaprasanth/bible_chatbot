@@ -1,15 +1,18 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { MdDeleteForever } from "react-icons/md";
 import api from "../api/axios";
+import { MessageContext } from "../context/MessageContext";
 
 interface Conversation {
   id: number;
   title?: string;
+  user_id: string;
 }
 
 const Conversations = () => {
   const [convList, setConvList] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
+  const { setCurrentConvId, setMessages } = useContext(MessageContext);
 
   // Fetch all conversations
   useEffect(() => {
@@ -32,6 +35,8 @@ const Conversations = () => {
     try {
       const res = await api.post("/conversations");
       setConvList((prev) => [...prev, res.data]);
+      setCurrentConvId(res.data.id);
+      setMessages([]);
     } catch (err) {
       console.error("Error creating new conversation:", err);
     }
@@ -47,6 +52,16 @@ const Conversations = () => {
     }
   };
 
+  //Get Messages from a conversation
+    const handleConversation = async (convId: number) => {
+        setCurrentConvId(convId);
+        try {
+            const res = await api.get(`/messages/${convId}`);
+            setMessages(res.data);
+        } catch (err) {
+            console.error("Error selecting conversation:", err);
+        }
+    }
   return (
     <div className="h-full bg-[#F8FAFC] dark:bg-[#111827] flex flex-col rounded-xl shadow-md overflow-hidden">
       {/* Header */}
@@ -73,7 +88,8 @@ const Conversations = () => {
             {convList.map((conv) => (
               <div
                 key={conv.id}
-                className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 hover:bg-[#E2E8F0] dark:hover:bg-[#334155] transition"
+                className=" hover:cursor-pointer flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 hover:bg-[#E2E8F0] dark:hover:bg-[#334155] transition"
+                onClick={() => handleConversation(conv.id)}
               >
                 <p className="text-[#1E293B] dark:text-[#E2E8F0] font-medium truncate">
                   {conv.title || `Conversation ${conv.id}`}
