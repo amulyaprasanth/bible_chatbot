@@ -6,3 +6,4 @@
 2. Make the page responsive to work with mobile devices as well.
 3. Add Password based login with OTP verification.
 4. Add animations make the website appeal good
+5. Add streaming responses to mimick typing behaviour.
