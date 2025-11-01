@@ -123,3 +123,4 @@ class AgentQueryResponse(BaseModel):
     conv_id: int
     sender_type: str
     content: str
+    title: str

@@ -124,6 +124,8 @@ class BibleAssistant:
         except Exception as e:
             logging.error(f"Agent invocation failed: {str(e)}")
             return "Sorry, something went wrong while processing your request."
+        
+    
 
 
 if __name__ == "__main__":

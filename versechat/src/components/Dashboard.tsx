@@ -5,11 +5,18 @@ import { AuthContext } from "../context/AuthContext";
 import ChatContainer from "./chatContainer";
 import Conversations from "./Conversations";
 
+export interface Conversation {
+  id: number;
+  title?: string;
+  user_id: string;
+}
 const Dashboard = () => {
   const authContext = useContext(AuthContext);
   const user = authContext.user;
   const [showMenu, setShowMenu] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [convList, setConvList] = useState<Conversation[]>([]);
+  
 
   // Reset image error when user changes
   useEffect(() => {
@@ -115,12 +122,12 @@ const Dashboard = () => {
       <div className="flex flex-1 flex-row overflow-hidden">
         {/* Sidebar */}
         <div className="w-1/5 bg-[#F8FAFC] dark:bg-[#111827] border-r border-gray-200 dark:border-gray-700">
-          <Conversations />
+          <Conversations  convList={convList} setConvList={setConvList}/>
         </div>
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0F172A]">
-          <ChatContainer user={user} />
+          <ChatContainer user={user}  setConvList={setConvList}/>
         </div>
       </div>
     </div>

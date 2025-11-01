@@ -2,15 +2,15 @@ import { useContext, useEffect, useState } from "react";
 import { MdDeleteForever } from "react-icons/md";
 import api from "../api/axios";
 import { MessageContext } from "../context/MessageContext";
+import type { Conversation } from "./Dashboard";
 
-interface Conversation {
-  id: number;
-  title?: string;
-  user_id: string;
+interface ConversationProps {
+  convList: Conversation[];
+  setConvList: React.Dispatch<React.SetStateAction<Conversation[]>>;
 }
 
-const Conversations = () => {
-  const [convList, setConvList] = useState<Conversation[]>([]);
+const Conversations = ( { convList, setConvList }: ConversationProps) => {
+  
   const [loading, setLoading] = useState(false);
   const { setCurrentConvId, setMessages } = useContext(MessageContext);
 
@@ -28,6 +28,7 @@ const Conversations = () => {
       }
     };
     fetchConversations();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Create a new chat
@@ -62,6 +63,7 @@ const Conversations = () => {
             console.error("Error selecting conversation:", err);
         }
     }
+    
   return (
     <div className="h-full bg-[#F8FAFC] dark:bg-[#111827] flex flex-col rounded-xl shadow-md overflow-hidden">
       {/* Header */}
