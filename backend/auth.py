@@ -303,7 +303,7 @@ async def google_login(login_request: GoogleLoginRequest, db: Session = Depends(
             value=access_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="None",
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             path="/"
         )
@@ -312,7 +312,7 @@ async def google_login(login_request: GoogleLoginRequest, db: Session = Depends(
             value=refresh_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="None",
             max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
             path="/"
         )
@@ -379,7 +379,7 @@ def refresh_token(request: Request, background_tasks: BackgroundTasks, db: Sessi
             value=new_access_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="None",
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             path="/"
         )
@@ -428,7 +428,7 @@ def _attempt_token_refresh(refresh_token: str, db: Session) -> JSONResponse:
             value=new_access_token,
             httponly=True,
             secure=True,
-            samesite="Lax",
+            samesite="None",
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             path="/"
         )
