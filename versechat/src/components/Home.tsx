@@ -50,24 +50,27 @@ export const Home = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1, ease: "easeOut" }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => navigate("/login")}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 px-8 sm:py-4 sm:px-12 rounded-full text-lg sm:text-xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 mb-8 sm:mb-12 border-2 border-white/20"
+          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 px-8 sm:py-4 sm:px-12 rounded-full text-base sm:text-lg md:text-xl shadow-2xl hover:shadow-3xl transition-all duration-300 mb-8 sm:mb-12 border-2 border-white/20"
         >
           Try It Out
         </motion.button>
 
         {/* Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl w-full px-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 max-w-6xl w-full px-4">
           {/* Card 1 - AI-Powered Insights */}
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 1.2, ease: "easeOut" }}
-            className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-xl hover:bg-white/20 transition-all duration-300"
+            whileHover={{ y: -5 }}
+            className="bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 border border-white/20 shadow-xl hover:bg-white/20 transition-all duration-300"
           >
-            <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-600 rounded-full mb-4 mx-auto">
+            <div className="flex items-center justify-center w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-blue-400 to-purple-600 rounded-full mb-3 md:mb-4 mx-auto">
               <svg
-                className="w-8 h-8 text-white"
+                className="w-7 h-7 md:w-8 md:h-8 text-white"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -80,10 +83,10 @@ export const Home = () => {
                 />
               </svg>
             </div>
-            <h3 className="text-xl font-bold mb-3 text-white">
+            <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 text-white">
               AI-Powered Insights
             </h3>
-            <p className="text-gray-200 text-sm leading-relaxed">
+            <p className="text-gray-200 text-xs md:text-sm leading-relaxed">
               Get intelligent answers to your biblical questions using advanced
               AI technology. Explore scriptures with deep understanding and
               contextual wisdom.
@@ -95,11 +98,12 @@ export const Home = () => {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 1.4, ease: "easeOut" }}
-            className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-xl hover:bg-white/20 transition-all duration-300"
+            whileHover={{ y: -5 }}
+            className="bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 border border-white/20 shadow-xl hover:bg-white/20 transition-all duration-300"
           >
-            <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-full mb-4 mx-auto">
+            <div className="flex items-center justify-center w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-full mb-3 md:mb-4 mx-auto">
               <svg
-                className="w-8 h-8 text-white"
+                className="w-7 h-7 md:w-8 md:h-8 text-white"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -112,8 +116,8 @@ export const Home = () => {
                 />
               </svg>
             </div>
-            <h3 className="text-xl font-bold mb-3 text-white">Bible Search</h3>
-            <p className="text-gray-200 text-sm leading-relaxed">
+            <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 text-white">Bible Search</h3>
+            <p className="text-gray-200 text-xs md:text-sm leading-relaxed">
               Search through the entire Bible semantically or find specific
               verses by reference. Get accurate biblical answers with proper
               context.
@@ -125,11 +129,12 @@ export const Home = () => {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 1.6, ease: "easeOut" }}
-            className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-xl hover:bg-white/20 transition-all duration-300"
+            whileHover={{ y: -5 }}
+            className="bg-white/10 backdrop-blur-md rounded-xl p-4 md:p-6 border border-white/20 shadow-xl hover:bg-white/20 transition-all duration-300"
           >
-            <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-full mb-4 mx-auto">
+            <div className="flex items-center justify-center w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-full mb-3 md:mb-4 mx-auto">
               <svg
-                className="w-8 h-8 text-white"
+                className="w-7 h-7 md:w-8 md:h-8 text-white"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -142,10 +147,10 @@ export const Home = () => {
                 />
               </svg>
             </div>
-            <h3 className="text-xl font-bold mb-3 text-white">
+            <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 text-white">
               Factual Context
             </h3>
-            <p className="text-gray-200 text-sm leading-relaxed">
+            <p className="text-gray-200 text-xs md:text-sm leading-relaxed">
               Access Wikipedia and web search for additional context and factual
               information that complements biblical teachings.
             </p>

@@ -49,3 +49,36 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Mobile-specific optimizations */
+@supports (-webkit-touch-callout: none) {
+  /* iOS-specific styles */
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  button, a {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Touch-friendly scrolling */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent text selection on buttons and interactive elements */
+button, .no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Mobile viewport fix */
+@supports (-webkit-touch-callout: none) {
+  /* Prevent zoom on input focus in iOS */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}

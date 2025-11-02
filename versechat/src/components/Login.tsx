@@ -63,20 +63,20 @@ const Login = () => {
         </div>
       )}
 
-      <div className="relative flex items-center justify-center h-screen p-6">
+      <div className="relative flex items-center justify-center h-screen p-4 md:p-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="bg-white/90 dark:bg-gray-900/90 rounded-2xl shadow-2xl p-10 w-full max-w-md backdrop-blur-lg transition-all duration-700 ease-in-out transform hover:scale-[1.02]"
+          className="bg-white/90 dark:bg-gray-900/90 rounded-2xl shadow-2xl p-6 md:p-10 w-full max-w-md backdrop-blur-lg transition-all duration-700 ease-in-out transform hover:scale-[1.02]"
         >
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6 text-center tracking-wide">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6 text-center tracking-wide">
             Welcome
           </h2>
 
           {/* AI Disclaimer */}
-          <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200 text-center">
+          <div className="mb-4 md:mb-6 p-3 md:p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <p className="text-xs md:text-sm text-yellow-800 dark:text-yellow-200 text-center">
               ⚠️ <strong>Disclaimer:</strong> AI-generated responses may be
               incorrect. Please verify information independently.
             </p>
@@ -85,9 +85,9 @@ const Login = () => {
           <button
             onClick={() => login()}
             disabled={loading}
-            className="mt-3 flex items-center justify-center w-full gap-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 py-3 font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-3 flex items-center justify-center w-full gap-2 md:gap-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 py-2.5 md:py-3 font-medium text-sm md:text-base text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
           >
-            <FcGoogle className="text-xl" />
+            <FcGoogle className="text-lg md:text-xl" />
             {loading ? "Signing in..." : "Continue with Google"}
           </button>
         </motion.div>

@@ -148,9 +148,9 @@ def refresh_google_tokens(user: User, db: Session) -> bool:
 
         # Calculate expiry (Google access tokens typically last 1 hour)
         if "expires_in" in tokens:
-            # Store as timezone-naive to match database TIMESTAMP type
+            # Store as timezone-aware to match database TIMESTAMP(timezone=True)
             expiry_time = datetime.datetime.now(
-                datetime.UTC).replace(tzinfo=None) + datetime.timedelta(seconds=tokens["expires_in"])
+                datetime.UTC) + datetime.timedelta(seconds=tokens["expires_in"])
             user.google_token_expiry = expiry_time
 
         db.commit()
@@ -174,8 +174,8 @@ def is_google_token_expired(user: User) -> bool:
         return True
 
     buffer_time = datetime.timedelta(minutes=GOOGLE_TOKEN_BUFFER_MINUTES)
-    # Use timezone-naive datetime to match database storage
-    current_time = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
+    # Use timezone-aware datetime to match database TIMESTAMP(timezone=True)
+    current_time = datetime.datetime.now(datetime.UTC)
     return current_time >= (user.google_token_expiry - buffer_time)
 
 
@@ -274,9 +274,9 @@ async def google_login(login_request: GoogleLoginRequest, db: Session = Depends(
 
         # Set Google token expiry (typically 1 hour)
         if token_response.expires_in:
-            # Store as timezone-naive to match database TIMESTAMP type
+            # Store as timezone-aware to match database TIMESTAMP(timezone=True)
             expiry_time = datetime.datetime.now(
-                datetime.UTC).replace(tzinfo=None) + datetime.timedelta(seconds=token_response.expires_in)
+                datetime.UTC) + datetime.timedelta(seconds=token_response.expires_in)
             user.google_token_expiry = expiry_time
 
         db.commit()

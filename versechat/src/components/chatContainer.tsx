@@ -1,8 +1,10 @@
+import { AnimatePresence, motion } from "framer-motion";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { FaPaperPlane, FaRobot } from "react-icons/fa";
 import api from "../api/axios";
-import { MessageContext } from "../context/MessageContext";
+import { MessageContext, type Message } from "../context/MessageContext";
 import type { Conversation } from "./Dashboard";
+import MessageBubble from "./MessageBubble";
 
 interface ChatContainerProps {
   user: { name: string; profile_picture: string };
@@ -19,6 +21,9 @@ const ChatContainer = ({
 
   const [thinking, setThinking] = useState<boolean>(false);
   const [userMessage, setUserMessage] = useState<string>("");
+  const [streamingMessageId, setStreamingMessageId] = useState<number | null>(
+    null
+  );
 
   // Auto-scroll when messages update or assistant is thinking
   useEffect(() => {
@@ -47,23 +52,28 @@ const ChatContainer = ({
         { conv_id: currentConvId, sender_type: "user", content: userMessage },
       ]);
 
+      const userMsg = userMessage;
       setUserMessage("");
       setThinking(true);
 
       const res = await api.post("/query", {
         conv_id: currentConvId,
-        query: userMessage,
+        query: userMsg,
       });
+
       if (res.data.title && res.data.title !== "New Conversation") {
         updateConversationTitle(currentConvId, res.data.title);
       }
 
       if (res.data) {
-        setMessages((prev) => [...prev, res.data]);
+        // Add assistant message with a temporary ID for streaming
+        const tempId = Date.now();
+        setMessages((prev) => [...prev, { ...res.data, tempId }]);
+        setStreamingMessageId(tempId);
+        setThinking(false);
       }
     } catch (error) {
       console.error("Error sending message:", error);
-    } finally {
       setThinking(false);
     }
   };
@@ -75,92 +85,131 @@ const ChatContainer = ({
   // 🟣 If no conversation is selected, show placeholder message
   if (!currentConvId) {
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-gray-900 text-gray-400">
-        <FaRobot className="text-5xl text-indigo-500 mb-4" />
-        <p className="text-lg font-medium text-center">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col items-center justify-center h-full bg-gray-900 text-gray-400 px-4"
+      >
+        <motion.div
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 200, damping: 15 }}
+        >
+          <FaRobot className="text-4xl md:text-5xl text-indigo-500 mb-4" />
+        </motion.div>
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="text-base md:text-lg font-medium text-center"
+        >
           🗨️ Select a conversation or start a new chat to begin.
-        </p>
-      </div>
+        </motion.p>
+      </motion.div>
     );
   }
 
   return (
     <div className="flex flex-col bg-gray-900 text-white h-full">
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`flex items-end gap-3 ${
-              msg.sender_type === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
-            {/* Assistant Avatar */}
-            {msg.sender_type === "assistant" && (
-              <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
-                <FaRobot className="text-xl text-indigo-400" />
-              </div>
-            )}
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+        <AnimatePresence mode="popLayout">
+          {messages.map((msg, index) => {
+            const msgWithTempId = msg as Message & { tempId?: number };
+            const isStreaming =
+              msgWithTempId.tempId === streamingMessageId &&
+              msg.sender_type === "assistant";
 
-            {/* Chat Bubble */}
-            <div
-              className={`max-w-xs md:max-w-md p-3 rounded-2xl text-sm break-words ${
-                msg.sender_type === "user"
-                  ? "bg-indigo-600 text-white rounded-br-none"
-                  : "bg-gray-800 text-gray-200 rounded-bl-none"
-              }`}
-            >
-              {msg.content}
-            </div>
+            const handleStreamingComplete = () => {
+              // Remove tempId when streaming completes
+              setMessages((prev) =>
+                prev.map((m, i) => {
+                  const mWithTempId = m as Message & { tempId?: number };
+                  return i === index && mWithTempId.tempId
+                    ? { ...m, tempId: undefined }
+                    : m;
+                })
+              );
+              setStreamingMessageId(null);
+            };
 
-            {/* User Avatar */}
-            {msg.sender_type === "user" && (
-              <img
-                src={user.profile_picture}
-                alt="User avatar"
-                className="w-10 h-10 rounded-full object-cover border border-gray-600"
+            return (
+              <MessageBubble
+                key={`${msg.conv_id}-${index}-${msgWithTempId.tempId || ""}`}
+                msg={msgWithTempId}
+                user={user}
+                isStreaming={isStreaming}
+                streamingMessageId={streamingMessageId}
+                onStreamingComplete={handleStreamingComplete}
+                index={index}
               />
-            )}
-          </div>
-        ))}
+            );
+          })}
+        </AnimatePresence>
 
         {/* Thinking Indicator */}
-        {thinking && (
-          <div className="flex items-center gap-2 text-gray-400 mt-2">
-            <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-sm italic">Assistant is thinking...</span>
-          </div>
-        )}
+        <AnimatePresence>
+          {thinking && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-2 text-gray-400 mt-2"
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full"
+              ></motion.div>
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="text-sm italic"
+              >
+                Assistant is thinking...
+              </motion.span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div ref={messagesEndRef} />
       </div>
 
       {/* Chat Input Area */}
       {!!currentConvId && (
-        <div className="sticky bottom-0 bg-gray-800 border-t border-gray-700 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <input
+        <motion.div
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="sticky bottom-0 bg-gray-800 border-t border-gray-700 px-3 md:px-4 py-3"
+        >
+          <div className="flex items-center gap-2 md:gap-3">
+            <motion.input
+              whileFocus={{ scale: 1.02 }}
               type="text"
               value={userMessage}
               onChange={handleChange}
               onKeyDown={handleKeyPress}
               placeholder="Type your message..."
-              className="flex-1 bg-gray-700 text-white placeholder-gray-400 px-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              className="flex-1 bg-gray-700 text-white placeholder-gray-400 px-3 md:px-4 py-2 md:py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm md:text-base"
             />
-            <button
-              className="p-3 bg-indigo-600 hover:bg-indigo-700 rounded-full transition"
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-2 md:p-3 bg-indigo-600 hover:bg-indigo-700 rounded-full transition-colors shrink-0"
               aria-label="Send message"
               onClick={handleSend}
               disabled={thinking}
             >
               <FaPaperPlane
-                className={`text-white text-lg ${
+                className={`text-white text-base md:text-lg transition-opacity ${
                   thinking ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               />
-            </button>
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );
