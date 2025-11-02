@@ -529,9 +529,25 @@ def get_user(user: User = Depends(get_current_user)):
 def logout():
     """Delete cookies and logout"""
     response = JSONResponse(content={"message": "Logged out successfully"})
-    response.delete_cookie("access_token", path="/")
-    response.delete_cookie("refresh_token", path="/")
+
+    # Must match the attributes used when setting cookies
+    response.delete_cookie(
+        key="access_token",
+        path="/",
+        secure=True,
+        httponly=True,
+        samesite="None"
+    )
+    response.delete_cookie(
+        key="refresh_token",
+        path="/",
+        secure=True,
+        httponly=True,
+        samesite="None"
+    )
+
     return response
+
 
 # === HEALTH CHECK ===
 
