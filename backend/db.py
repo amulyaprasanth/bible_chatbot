@@ -14,7 +14,7 @@ DB_PORT = os.getenv("DB_PORT", "3306")  # default MySQL port
 DB_NAME = os.getenv("DB_NAME")
 
 # Create SQLAlchemy database URL
-DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}?charset=utf8mb4"
+DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 # Create engine
 engine = create_engine(
