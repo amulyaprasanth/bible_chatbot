@@ -20,6 +20,8 @@ groq_api_key = os.getenv("GROQ_API_KEY")
 # ========================
 #  TITLE GENERATOR CLASS
 # ========================
+
+
 class ConversationTitleGenerator:
     """
     Generates conversation titles intelligently.
@@ -28,7 +30,8 @@ class ConversationTitleGenerator:
     """
 
     def __init__(self):
-        self.model = ChatGroq(model_name="llama-3.1-8b-instant", groq_api_key=groq_api_key)
+        self.model = ChatGroq(
+            model_name="llama-3.1-8b-instant", groq_api_key=groq_api_key)
         self.greeting_pattern = re.compile(
             r"^(hi|hello|hey|good\s*(morning|evening|afternoon|night)|yo|sup|what'?s up|how are you)[,!\.\s]*$",
             re.IGNORECASE,
@@ -50,7 +53,7 @@ class ConversationTitleGenerator:
         if not messages:
             return False
 
-        user_msgs = [m.content for m in messages if  m.sender_type== "user"]
+        user_msgs = [m.content for m in messages if m.sender_type == "user"]
         if not user_msgs:
             return False
 
@@ -97,7 +100,8 @@ app.include_router(router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173",
+                   "https://biblechatbot.netlify.app/"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -111,7 +115,8 @@ def test_health():
 
 @app.get("/conversations")
 def get_conversations(user: User = Depends(get_current_user), db=Depends(get_db)):
-    conversations = db.query(Conversation).filter(Conversation.user_id == user.id).all()
+    conversations = db.query(Conversation).filter(
+        Conversation.user_id == user.id).all()
     return conversations
 
 
@@ -153,7 +158,8 @@ def get_message(conv_id: int, user: User = Depends(get_current_user), db=Depends
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    messages = db.query(Message).filter(Message.conversation_id == conv_id).all()
+    messages = db.query(Message).filter(
+        Message.conversation_id == conv_id).all()
     return messages
 
 
@@ -167,7 +173,8 @@ async def query_agent(request: AgentQueryRequest, user: User = Depends(get_curre
         raise HTTPException(status_code=404, detail="Conversation not found")
 
     # Save user message
-    new_message = Message(conversation_id=request.conv_id, sender_type="user", content=request.query)
+    new_message = Message(conversation_id=request.conv_id,
+                          sender_type="user", content=request.query)
     db.add(new_message)
     db.commit()
     db.refresh(new_message)
@@ -178,7 +185,8 @@ async def query_agent(request: AgentQueryRequest, user: User = Depends(get_curre
     ).order_by(Message.id.asc()).all()
 
     formatted_messages = [
-        {"role": "user" if m.sender_type == "user" else "assistant", "content": m.content}
+        {"role": "user" if m.sender_type ==
+            "user" else "assistant", "content": m.content}
         for m in prior_messages
     ]
 
@@ -186,7 +194,8 @@ async def query_agent(request: AgentQueryRequest, user: User = Depends(get_curre
     agent_output = agent.ask(request.query, messages=formatted_messages[:-1])
 
     # Save assistant response
-    agent_response = Message(conversation_id=request.conv_id, sender_type="assistant", content=agent_output)
+    agent_response = Message(
+        conversation_id=request.conv_id, sender_type="assistant", content=agent_output)
     db.add(agent_response)
     db.commit()
     db.refresh(agent_response)
