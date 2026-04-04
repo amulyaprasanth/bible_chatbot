@@ -33,24 +33,22 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 # === CONFIGS ===
 CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-TOKEN_URI = os.getenv("GOOGLE_TOKEN_URI",
-                      "https://oauth2.googleapis.com/token")
+TOKEN_URI = os.getenv("GOOGLE_TOKEN_URI", "https://oauth2.googleapis.com/token")
 REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(
-    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 GOOGLE_TOKEN_BUFFER_MINUTES = int(
     # Refresh 5 min before expiry
-    os.getenv("GOOGLE_TOKEN_BUFFER_MINUTES", "5"))
+    os.getenv("GOOGLE_TOKEN_BUFFER_MINUTES", "5")
+)
 
 # === VALIDATE ENV VARS ===
 required_env_vars = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "SECRET_KEY"]
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
-    raise RuntimeError(
-        f"Missing required environment variables: {missing_vars}")
+    raise RuntimeError(f"Missing required environment variables: {missing_vars}")
 
 # === CONSTANTS ===
 ERROR_INVALID_TOKEN_PAYLOAD = "Invalid token payload"
@@ -61,18 +59,18 @@ ERROR_INVALID_TOKEN_MISSING_SUBJECT = "Invalid token: missing subject"
 
 
 def create_access_token(data: dict):
-    expire = datetime.datetime.now(
-        datetime.UTC) + datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode = {**data, "exp": expire,
-                 "scope": "access_token", "type": "access"}
+    expire = datetime.datetime.now(datetime.UTC) + datetime.timedelta(
+        minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+    to_encode = {**data, "exp": expire, "scope": "access_token", "type": "access"}
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 def create_refresh_token(data: dict):
-    expire = datetime.datetime.now(
-        datetime.UTC) + datetime.timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode = {**data, "exp": expire,
-                 "scope": "refresh_token", "type": "refresh"}
+    expire = datetime.datetime.now(datetime.UTC) + datetime.timedelta(
+        days=REFRESH_TOKEN_EXPIRE_DAYS
+    )
+    to_encode = {**data, "exp": expire, "scope": "refresh_token", "type": "refresh"}
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -88,39 +86,50 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 
     if not token:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="No access token provided")
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="No access token provided"
+        )
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
         if not validate_token_payload(payload):
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_INVALID_TOKEN_PAYLOAD)
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=ERROR_INVALID_TOKEN_PAYLOAD,
+            )
 
         if payload.get("scope") != "access_token" or payload.get("type") != "access":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_INVALID_TOKEN_SCOPE)
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=ERROR_INVALID_TOKEN_SCOPE,
+            )
 
         user_id: str = payload.get("sub")
         if not user_id:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                detail=ERROR_INVALID_TOKEN_MISSING_SUBJECT)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=ERROR_INVALID_TOKEN_MISSING_SUBJECT,
+            )
 
     except ExpiredSignatureError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Access token expired")
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Access token expired"
+        )
     except InvalidTokenError as e:
         logger.warning(f"Invalid token attempt: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        )
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         logger.warning(f"User not found for ID: {user_id}")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+        )
 
     return user
+
 
 # === GOOGLE TOKEN MANAGEMENT ===
 
@@ -149,8 +158,9 @@ def refresh_google_tokens(user: User, db: Session) -> bool:
         # Calculate expiry (Google access tokens typically last 1 hour)
         if "expires_in" in tokens:
             # Store as timezone-aware to match database TIMESTAMP(timezone=True)
-            expiry_time = datetime.datetime.now(
-                datetime.UTC) + datetime.timedelta(seconds=tokens["expires_in"])
+            expiry_time = datetime.datetime.now(datetime.UTC) + datetime.timedelta(
+                seconds=tokens["expires_in"]
+            )
             user.google_token_expiry = expiry_time
 
         db.commit()
@@ -158,12 +168,12 @@ def refresh_google_tokens(user: User, db: Session) -> bool:
         return True
 
     except requests.RequestException as e:
-        logger.error(
-            f"Failed to refresh Google tokens for user {user.id}: {str(e)}")
+        logger.error(f"Failed to refresh Google tokens for user {user.id}: {str(e)}")
         return False
     except Exception as e:
         logger.error(
-            f"Unexpected error refreshing Google tokens for user {user.id}: {str(e)}")
+            f"Unexpected error refreshing Google tokens for user {user.id}: {str(e)}"
+        )
         db.rollback()
         return False
 
@@ -189,16 +199,18 @@ def ensure_valid_google_tokens(user: User, db: Session) -> bool:
 
     return True
 
+
 # === GOOGLE LOGIN ===
 
 
 @router.post("/google", status_code=status.HTTP_200_OK)
-async def google_login(login_request: GoogleLoginRequest, db: Session = Depends(get_db)):
+async def google_login(
+    login_request: GoogleLoginRequest, db: Session = Depends(get_db)
+):
     """Login or register via Google OAuth"""
     if not login_request.code or len(login_request.code) < 10:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid authorization code"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid authorization code"
         )
 
     token_data = GoogleTokenRequest(
@@ -206,23 +218,20 @@ async def google_login(login_request: GoogleLoginRequest, db: Session = Depends(
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
         redirect_uri=REDIRECT_URI,
-        grant_type="authorization_code"
+        grant_type="authorization_code",
     )
 
     try:
         # Exchange code for tokens
-        response = requests.post(
-            TOKEN_URI, data=token_data.model_dump(), timeout=30)
+        response = requests.post(TOKEN_URI, data=token_data.model_dump(), timeout=30)
         response.raise_for_status()
         response_json = response.json()
 
         if "error" in response_json:
-            error_msg = response_json.get(
-                "error_description", "Google login failed")
+            error_msg = response_json.get("error_description", "Google login failed")
             logger.error(f"Google token error: {error_msg}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Authentication failed"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Authentication failed"
             )
 
         token_response = GoogleTokenResponse(**response_json)
@@ -234,8 +243,7 @@ async def google_login(login_request: GoogleLoginRequest, db: Session = Depends(
 
         if id_info["iss"] not in ["accounts.google.com", "https://accounts.google.com"]:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid token issuer"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token issuer"
             )
 
         email = id_info["email"]
@@ -265,7 +273,7 @@ async def google_login(login_request: GoogleLoginRequest, db: Session = Depends(
                 if not user:
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Failed to create user"
+                        detail="Failed to create user",
                     )
 
         # Update user with latest Google tokens
@@ -275,8 +283,9 @@ async def google_login(login_request: GoogleLoginRequest, db: Session = Depends(
         # Set Google token expiry (typically 1 hour)
         if token_response.expires_in:
             # Store as timezone-aware to match database TIMESTAMP(timezone=True)
-            expiry_time = datetime.datetime.now(
-                datetime.UTC) + datetime.timedelta(seconds=token_response.expires_in)
+            expiry_time = datetime.datetime.now(datetime.UTC) + datetime.timedelta(
+                seconds=token_response.expires_in
+            )
             user.google_token_expiry = expiry_time
 
         db.commit()
@@ -292,8 +301,8 @@ async def google_login(login_request: GoogleLoginRequest, db: Session = Depends(
                     "id": str(user.id),
                     "name": user.name,
                     "email": user.email,
-                    "profile_picture": user.profile_picture
-                }
+                    "profile_picture": user.profile_picture,
+                },
             }
         )
 
@@ -305,7 +314,7 @@ async def google_login(login_request: GoogleLoginRequest, db: Session = Depends(
             secure=True,
             samesite="None",
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            path="/"
+            path="/",
         )
         response.set_cookie(
             key="refresh_token",
@@ -314,7 +323,7 @@ async def google_login(login_request: GoogleLoginRequest, db: Session = Depends(
             secure=True,
             samesite="None",
             max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
-            path="/"
+            path="/",
         )
 
         return response
@@ -323,32 +332,34 @@ async def google_login(login_request: GoogleLoginRequest, db: Session = Depends(
         logger.error(f"Google token exchange failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Authentication service unavailable"
+            detail="Authentication service unavailable",
         )
     except ValueError as e:
         logger.error(f"Google ID token verification failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid authentication token"
+            detail="Invalid authentication token",
         )
     except Exception as e:
         logger.error(f"Unexpected error during Google login: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error during authentication"
+            detail="Internal server error during authentication",
         )
+
 
 # === REFRESH YOUR OWN APP TOKEN ===
 
 
 @router.post("/refresh", status_code=status.HTTP_200_OK)
-def refresh_token(request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def refresh_token(
+    request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+):
     """Refresh app-level JWT using stored refresh cookie"""
     token = request.cookies.get("refresh_token")
     if not token:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No refresh token provided"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="No refresh token provided"
         )
 
     try:
@@ -356,16 +367,22 @@ def refresh_token(request: Request, background_tasks: BackgroundTasks, db: Sessi
 
         if not validate_token_payload(payload):
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_INVALID_TOKEN_PAYLOAD)
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=ERROR_INVALID_TOKEN_PAYLOAD,
+            )
 
         if payload.get("scope") != "refresh_token" or payload.get("type") != "refresh":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_INVALID_TOKEN_SCOPE)
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=ERROR_INVALID_TOKEN_SCOPE,
+            )
 
         user_id = payload.get("sub")
         if not user_id:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                detail=ERROR_INVALID_TOKEN_MISSING_SUBJECT)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=ERROR_INVALID_TOKEN_MISSING_SUBJECT,
+            )
 
         # Optionally refresh Google tokens in background
         user = db.query(User).filter(User.id == user_id).first()
@@ -381,19 +398,17 @@ def refresh_token(request: Request, background_tasks: BackgroundTasks, db: Sessi
             secure=True,
             samesite="None",
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            path="/"
+            path="/",
         )
         return response
 
     except ExpiredSignatureError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token expired"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token expired"
         )
     except InvalidTokenError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
 
 
@@ -404,16 +419,22 @@ def _attempt_token_refresh(refresh_token: str, db: Session) -> JSONResponse:
 
         if not validate_token_payload(payload):
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_INVALID_TOKEN_PAYLOAD)
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=ERROR_INVALID_TOKEN_PAYLOAD,
+            )
 
         if payload.get("scope") != "refresh_token" or payload.get("type") != "refresh":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_INVALID_TOKEN_SCOPE)
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=ERROR_INVALID_TOKEN_SCOPE,
+            )
 
         user_id = payload.get("sub")
         if not user_id:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                detail=ERROR_INVALID_TOKEN_MISSING_SUBJECT)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=ERROR_INVALID_TOKEN_MISSING_SUBJECT,
+            )
 
         # Refresh Google tokens if needed
         user = db.query(User).filter(User.id == user_id).first()
@@ -421,8 +442,7 @@ def _attempt_token_refresh(refresh_token: str, db: Session) -> JSONResponse:
             ensure_valid_google_tokens(user, db)
 
         new_access_token = create_access_token({"sub": user_id})
-        response = JSONResponse(
-            content={"authenticated": True, "refreshed": True})
+        response = JSONResponse(content={"authenticated": True, "refreshed": True})
         response.set_cookie(
             key="access_token",
             value=new_access_token,
@@ -430,15 +450,16 @@ def _attempt_token_refresh(refresh_token: str, db: Session) -> JSONResponse:
             secure=True,
             samesite="None",
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            path="/"
+            path="/",
         )
         return response
 
     except (ExpiredSignatureError, InvalidTokenError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Session expired, please login again"
+            detail="Session expired, please login again",
         )
+
 
 # === CHECK LOGIN STATE (AUTO REFRESH ON EXPIRED) ===
 
@@ -449,8 +470,7 @@ def check_auth(request: Request, db: Session = Depends(get_db)):
     token = request.cookies.get("access_token")
     if not token:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No access token provided"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="No access token provided"
         )
 
     try:
@@ -470,16 +490,15 @@ def check_auth(request: Request, db: Session = Depends(get_db)):
         refresh_token = request.cookies.get("refresh_token")
         if not refresh_token:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Session expired"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="expired"
             )
         return _attempt_token_refresh(refresh_token, db)
 
     except InvalidTokenError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid access token"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token"
         )
+
 
 # === REFRESH GOOGLE TOKEN ===
 
@@ -492,21 +511,24 @@ def refresh_google_token(request: Request, db: Session = Depends(get_db)):
     if not user.google_refresh_token:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No Google refresh token available"
+            detail="No Google refresh token available",
         )
 
     success = refresh_google_tokens(user, db)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Failed to refresh Google tokens"
+            detail="Failed to refresh Google tokens",
         )
 
     return {
         "message": "Google tokens refreshed successfully",
         "google_access_token": user.google_access_token,
-        "expires_at": user.google_token_expiry.isoformat() if user.google_token_expiry else None
+        "expires_at": user.google_token_expiry.isoformat()
+        if user.google_token_expiry
+        else None,
     }
+
 
 # === GET CURRENT USER ===
 
@@ -519,8 +541,9 @@ def get_user(user: User = Depends(get_current_user)):
         "name": user.name,
         "email": user.email,
         "profile_picture": user.profile_picture,
-        "auth_provider": user.auth_provider
+        "auth_provider": user.auth_provider,
     }
+
 
 # === LOGOUT ===
 
@@ -532,18 +555,10 @@ def logout():
 
     # Must match the attributes used when setting cookies
     response.delete_cookie(
-        key="access_token",
-        path="/",
-        secure=True,
-        httponly=True,
-        samesite="None"
+        key="access_token", path="/", secure=True, httponly=True, samesite="None"
     )
     response.delete_cookie(
-        key="refresh_token",
-        path="/",
-        secure=True,
-        httponly=True,
-        samesite="None"
+        key="refresh_token", path="/", secure=True, httponly=True, samesite="None"
     )
 
     return response
@@ -561,6 +576,6 @@ def health_check():
         "features": {
             "google_oauth": bool(CLIENT_ID and CLIENT_SECRET),
             "token_refresh": True,
-            "auto_refresh": True
-        }
+            "auto_refresh": True,
+        },
     }

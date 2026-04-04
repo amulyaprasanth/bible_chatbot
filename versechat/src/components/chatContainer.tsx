@@ -24,6 +24,7 @@ const ChatContainer = ({
   const [streamingMessageId, setStreamingMessageId] = useState<number | null>(
     null
   );
+  const [rateLimitError, setRateLimitError] = useState<string | null>(null);
 
   // Auto-scroll when messages update or assistant is thinking
   useEffect(() => {
@@ -75,6 +76,13 @@ const ChatContainer = ({
     } catch (error) {
       console.error("Error sending message:", error);
       setThinking(false);
+      if (error && typeof error === "object" && "response" in error) {
+        const err = error as { response?: { status?: number; data?: { detail?: string } } };
+        if (err.response?.status === 429) {
+          setRateLimitError("Too many requests. Please wait before sending another message.");
+          setTimeout(() => setRateLimitError(null), 5000);
+        }
+      }
     }
   };
 
@@ -184,6 +192,16 @@ const ChatContainer = ({
           transition={{ duration: 0.3 }}
           className="sticky bottom-0 bg-gray-800 border-t border-gray-700 px-3 md:px-4 py-3"
         >
+          {rateLimitError && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mb-2 px-3 py-2 bg-red-500/20 border border-red-500 rounded-lg text-red-300 text-sm text-center"
+            >
+              {rateLimitError}
+            </motion.div>
+          )}
           <div className="flex items-center gap-2 md:gap-3">
             <motion.input
               whileFocus={{ scale: 1.02 }}

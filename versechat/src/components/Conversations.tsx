@@ -88,7 +88,7 @@ const Conversations = ({
       try {
         setLoading(true);
         const res = await api.get("/conversations");
-        setConvList(res.data);
+        setConvList(res.data.conversations);
       } catch (err) {
         console.error("Error fetching conversations:", err);
       } finally {
@@ -116,6 +116,10 @@ const Conversations = ({
     try {
       await api.delete(`/conversations/${convId}`);
       setConvList((prev) => prev.filter((c) => c.id !== convId));
+      if (currentConvId === convId) {
+        setCurrentConvId(null);
+        setMessages([]);
+      }
     } catch (err) {
       console.error("Error deleting conversation:", err);
     }
@@ -126,7 +130,7 @@ const Conversations = ({
     setCurrentConvId(convId);
     try {
       const res = await api.get(`/messages/${convId}`);
-      setMessages(res.data);
+      setMessages(res.data.messages);
     } catch (err) {
       console.error("Error selecting conversation:", err);
     }

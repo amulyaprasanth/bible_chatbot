@@ -1,14 +1,23 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from collections import defaultdict
+from time import time
 import re
 import os
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from auth import get_current_user, router
 from db import engine, get_db
-from models import AgentQueryRequest, AgentQueryResponse, Base, Conversation, Message, User
+from models import (
+    AgentQueryRequest,
+    AgentQueryResponse,
+    Base,
+    Conversation,
+    Message,
+    User,
+)
 from src.agent import BibleAssistant
 
 from langchain_groq import ChatGroq
@@ -16,6 +25,24 @@ from dotenv import load_dotenv
 
 load_dotenv()
 groq_api_key = os.getenv("GROQ_API_KEY")
+
+# Rate limiting config
+RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "20"))
+RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
+rate_limit_store = defaultdict(list)
+
+
+def check_rate_limit(user_id: str):
+    now = time()
+    user_requests = rate_limit_store[user_id]
+    user_requests[:] = [t for t in user_requests if now - t < RATE_LIMIT_WINDOW]
+    if len(user_requests) >= RATE_LIMIT_REQUESTS:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests. Please wait before trying again.",
+        )
+    user_requests.append(now)
+
 
 # ========================
 #  TITLE GENERATOR CLASS
@@ -31,7 +58,8 @@ class ConversationTitleGenerator:
 
     def __init__(self):
         self.model = ChatGroq(
-            model_name="llama-3.1-8b-instant", groq_api_key=groq_api_key)
+            model_name="llama-3.1-8b-instant", groq_api_key=groq_api_key
+        )
         self.greeting_pattern = re.compile(
             r"^(hi|hello|hey|good\s*(morning|evening|afternoon|night)|yo|sup|what'?s up|how are you)[,!\.\s]*$",
             re.IGNORECASE,
@@ -86,6 +114,7 @@ class ConversationTitleGenerator:
 #  FASTAPI APP SETUP
 # ========================
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine, checkfirst=True)
@@ -100,8 +129,7 @@ app.include_router(router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173",
-                   "https://biblechatbot.netlify.app"],
+    allow_origins=["http://localhost:5173", "https://biblechatbot.netlify.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -114,19 +142,40 @@ def test_health():
 
 
 @app.get("/conversations")
-def get_conversations(user: User = Depends(get_current_user), db=Depends(get_db)):
-    conversations = db.query(Conversation).filter(
-        Conversation.user_id == user.id).all()
-    return conversations
+def get_conversations(
+    user: User = Depends(get_current_user),
+    db=Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+):
+    total = db.query(Conversation).filter(Conversation.user_id == user.id).count()
+    conversations = (
+        db.query(Conversation)
+        .filter(Conversation.user_id == user.id)
+        .order_by(Conversation.updated_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return {
+        "conversations": conversations,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+    }
 
 
 @app.post("/conversations")
-async def create_conversation(user: User = Depends(get_current_user), db=Depends(get_db)):
+async def create_conversation(
+    user: User = Depends(get_current_user), db=Depends(get_db)
+):
+    check_rate_limit(str(user.id))
+
     new_conv = Conversation(
         user_id=user.id,
         title="New Conversation",
         is_active=True,
-        updated_at=datetime.now(timezone.utc)
+        updated_at=datetime.now(timezone.utc),
     )
 
     db.add(new_conv)
@@ -137,10 +186,14 @@ async def create_conversation(user: User = Depends(get_current_user), db=Depends
 
 
 @app.delete("/conversations/{conversation_id}")
-def delete_conversation(conversation_id: int, user: User = Depends(get_current_user), db=Depends(get_db)):
-    conversation = db.query(Conversation).filter(
-        Conversation.id == conversation_id, Conversation.user_id == user.id
-    ).first()
+def delete_conversation(
+    conversation_id: int, user: User = Depends(get_current_user), db=Depends(get_db)
+):
+    conversation = (
+        db.query(Conversation)
+        .filter(Conversation.id == conversation_id, Conversation.user_id == user.id)
+        .first()
+    )
 
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -151,42 +204,70 @@ def delete_conversation(conversation_id: int, user: User = Depends(get_current_u
 
 
 @app.get("/messages/{conv_id}")
-def get_message(conv_id: int, user: User = Depends(get_current_user), db=Depends(get_db)):
-    conversation = db.query(Conversation).filter(
-        Conversation.id == conv_id, Conversation.user_id == user.id
-    ).first()
+def get_message(
+    conv_id: int,
+    user: User = Depends(get_current_user),
+    db=Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+):
+    conversation = (
+        db.query(Conversation)
+        .filter(Conversation.id == conv_id, Conversation.user_id == user.id)
+        .first()
+    )
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    messages = db.query(Message).filter(
-        Message.conversation_id == conv_id).all()
-    return messages
+    total = db.query(Message).filter(Message.conversation_id == conv_id).count()
+    messages = (
+        db.query(Message)
+        .filter(Message.conversation_id == conv_id)
+        .order_by(Message.id.asc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return {"messages": messages, "total": total, "skip": skip, "limit": limit}
 
 
 @app.post("/query", response_model=AgentQueryResponse)
-async def query_agent(request: AgentQueryRequest, user: User = Depends(get_current_user), db=Depends(get_db)):
-    # Check if conversation belongs to the user
-    conversation = db.query(Conversation).filter(
-        Conversation.id == request.conv_id, Conversation.user_id == user.id
-    ).first()
+async def query_agent(
+    request: AgentQueryRequest,
+    user: User = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    check_rate_limit(str(user.id))
+
+    conversation = (
+        db.query(Conversation)
+        .filter(Conversation.id == request.conv_id, Conversation.user_id == user.id)
+        .first()
+    )
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
     # Save user message
-    new_message = Message(conversation_id=request.conv_id,
-                          sender_type="user", content=request.query)
+    new_message = Message(
+        conversation_id=request.conv_id, sender_type="user", content=request.query
+    )
     db.add(new_message)
     db.commit()
     db.refresh(new_message)
 
     # Load prior messages
-    prior_messages = db.query(Message).filter(
-        Message.conversation_id == request.conv_id
-    ).order_by(Message.id.asc()).all()
+    prior_messages = (
+        db.query(Message)
+        .filter(Message.conversation_id == request.conv_id)
+        .order_by(Message.id.asc())
+        .all()
+    )
 
     formatted_messages = [
-        {"role": "user" if m.sender_type ==
-            "user" else "assistant", "content": m.content}
+        {
+            "role": "user" if m.sender_type == "user" else "assistant",
+            "content": m.content,
+        }
         for m in prior_messages
     ]
 
@@ -195,7 +276,8 @@ async def query_agent(request: AgentQueryRequest, user: User = Depends(get_curre
 
     # Save assistant response
     agent_response = Message(
-        conversation_id=request.conv_id, sender_type="assistant", content=agent_output)
+        conversation_id=request.conv_id, sender_type="assistant", content=agent_output
+    )
     db.add(agent_response)
     db.commit()
     db.refresh(agent_response)
@@ -203,7 +285,10 @@ async def query_agent(request: AgentQueryRequest, user: User = Depends(get_curre
     # =============================
     # Generate conversation title
     # =============================
-    if conversation.title == "New Conversation" and title_generator.should_generate_title(prior_messages):
+    if (
+        conversation.title == "New Conversation"
+        and title_generator.should_generate_title(prior_messages)
+    ):
         title = title_generator.generate_title(request.query)
         if title:
             conversation.title = title
@@ -215,10 +300,11 @@ async def query_agent(request: AgentQueryRequest, user: User = Depends(get_curre
         conv_id=request.conv_id,
         sender_type="assistant",
         content=agent_output,
-        title=conversation.title
+        title=conversation.title,
     )
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="localhost", port=8000)
