@@ -1,14 +1,7 @@
 import axios from "axios";
 
-const getBaseURL = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  return "http://localhost:8000";
-};
-
 const api = axios.create({
-  baseURL: getBaseURL(),
+  baseURL: "https://bible-chatbot-backend.up.railway.app",
   withCredentials: true,
 });
 
