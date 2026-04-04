@@ -3,6 +3,7 @@ import axios from "axios";
 const api = axios.create({
   baseURL: "https://bible-chatbot-backend.up.railway.app",
   withCredentials: true,
+  timeout: 15000,
 });
 
 let isRefreshing = false;
@@ -18,12 +19,19 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (!originalRequest || originalRequest._retry) {
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status === 401) {
+      if (originalRequest.url?.includes("/auth/")) {
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           refreshQueue.push((token: string) => {
             if (token) {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
               resolve(api(originalRequest));
             } else {
               reject(error);
@@ -43,13 +51,12 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError);
         isRefreshing = false;
-        console.error("Refresh failed, logging out");
         globalThis.location.href = "/login";
         return Promise.reject(refreshError);
       }
     }
 
-    throw error;
+    return Promise.reject(error);
   }
 );
 
