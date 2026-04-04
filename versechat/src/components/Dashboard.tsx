@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { FaBars, FaTimes, FaUserCircle } from "react-icons/fa";
 import api from "../api/axios";
 import { AuthContext } from "../context/AuthContext";
+import { MessageContext } from "../context/MessageContext";
 import ChatContainer from "./chatContainer";
 import Conversations from "./Conversations";
 
@@ -13,24 +14,25 @@ export interface Conversation {
 }
 const Dashboard = () => {
   const authContext = useContext(AuthContext);
+  const { setCurrentConvId, setMessages } = useContext(MessageContext);
   const user = authContext.user;
   const [showMenu, setShowMenu] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [convList, setConvList] = useState<Conversation[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Track window size to determine if we're on desktop
   useEffect(() => {
     const handleResize = () => {
       setIsDesktop(window.innerWidth >= 768);
-      // Auto-open sidebar on desktop
       if (window.innerWidth >= 768) {
         setSidebarOpen(true);
       }
     };
 
-    handleResize(); // Set initial state
+    handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -40,10 +42,44 @@ const Dashboard = () => {
     setImageError(false);
   }, [user?.profile_picture]);
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showMenu]);
+
+  // Create new conversation on first login
+  useEffect(() => {
+    const createNewConversation = async () => {
+      try {
+        const res = await api.post("/conversations");
+        const newConv = res.data;
+        setConvList((prev) => [newConv, ...prev]);
+        setCurrentConvId(newConv.id);
+        setMessages([]);
+      } catch (err) {
+        console.error("Error creating new conversation:", err);
+      }
+    };
+
+    if (user && convList.length === 0) {
+      createNewConversation();
+    }
+  }, [user, convList.length, setCurrentConvId, setMessages]);
+
   const handleLogout = async () => {
     try {
       await api.post("/auth/logout", {}, { withCredentials: true });
-      // clear all cookies
       for (const c of document.cookie.split(";")) {
         document.cookie = c
           .replace(/^ +/, "")
@@ -118,7 +154,7 @@ const Dashboard = () => {
         </motion.h1>
 
         {/* Profile Menu */}
-        <div className="relative">
+        <div className="relative" ref={menuRef}>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

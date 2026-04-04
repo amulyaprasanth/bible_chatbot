@@ -198,7 +198,7 @@ const Conversations = ({
               transition={{ delay: 0.2 }}
               className="text-gray-600 dark:text-gray-400 mb-4"
             >
-              No previous conversations found.
+              Start a new conversation below.
             </motion.p>
             <motion.button
               whileHover={{ scale: 1.05 }}
