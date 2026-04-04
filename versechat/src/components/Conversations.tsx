@@ -17,7 +17,7 @@ const Conversations = ({
   onConversationSelect,
 }: ConversationProps) => {
   const [loading, setLoading] = useState(false);
-  const { setCurrentConvId, setMessages } = useContext(MessageContext);
+  const { currentConvId, setCurrentConvId, setMessages } = useContext(MessageContext);
   const [streamingTitleIds, setStreamingTitleIds] = useState<Set<number>>(
     new Set()
   );
