@@ -6,3 +6,6 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+[build.environment]
+  VITE_API_URL = "https://bible-chatbot-backend.up.railway.app"
