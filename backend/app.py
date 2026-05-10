@@ -1,15 +1,18 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from collections import defaultdict
 from time import time
-import re
 import os
+from typing import Annotated
 
+import redis.asyncio as aioredis
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse
 
 from auth import get_current_user, router
 from db import engine, get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 from models import (
     AgentQueryRequest,
     AgentQueryResponse,
@@ -19,95 +22,60 @@ from models import (
     User,
 )
 from src.agent import BibleAssistant
-
-from langchain_groq import ChatGroq
+from src.conversation_title_generator import ConversationTitleGenerator
 from dotenv import load_dotenv
 
 load_dotenv()
-groq_api_key = os.getenv("GROQ_API_KEY")
+os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY", "")
 
 # Rate limiting config
 RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "20"))
-RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
-rate_limit_store = defaultdict(list)
+RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))  # seconds
+
+ERROR_CONVERSATION_NOT_FOUND = "Conversation not found"
+
+# Redis client (initialised in lifespan)
+redis_client: aioredis.Redis | None = None
 
 
-def check_rate_limit(user_id: str):
+async def check_rate_limit(user_id: str):
+    """
+    Sliding-window rate limiter backed by Redis sorted sets.
+    Key: rate_limit:<user_id>
+    Members: request timestamps (float), scored by the same timestamp.
+    Expired entries are pruned on every call; the key TTL is reset to the window size.
+    Falls back silently if Redis is unavailable.
+    """
+    if redis_client is None:
+        return  # Redis not available — fail open
+
+    key = f"rate_limit:{user_id}"
     now = time()
-    user_requests = rate_limit_store[user_id]
-    user_requests[:] = [t for t in user_requests if now - t < RATE_LIMIT_WINDOW]
-    if len(user_requests) >= RATE_LIMIT_REQUESTS:
-        raise HTTPException(
-            status_code=429,
-            detail="Too many requests. Please wait before trying again.",
-        )
-    user_requests.append(now)
+    window_start = now - RATE_LIMIT_WINDOW
 
+    try:
+        pipe = redis_client.pipeline()
+        # Remove timestamps outside the current window
+        pipe.zremrangebyscore(key, "-inf", window_start)
+        # Count remaining requests in the window
+        pipe.zcard(key)
+        # Add current request timestamp
+        pipe.zadd(key, {str(now): now})
+        # Reset TTL so the key expires after the window
+        pipe.expire(key, RATE_LIMIT_WINDOW)
+        results = await pipe.execute()
 
-# ========================
-#  TITLE GENERATOR CLASS
-# ========================
-
-
-class ConversationTitleGenerator:
-    """
-    Generates conversation titles intelligently.
-    - Skips simple greetings
-    - Waits until meaningful text appears
-    """
-
-    def __init__(self):
-        self.model = ChatGroq(
-            model_name="llama-3.1-8b-instant", groq_api_key=groq_api_key
-        )
-        self.greeting_pattern = re.compile(
-            r"^(hi|hello|hey|good\s*(morning|evening|afternoon|night)|yo|sup|what'?s up|how are you)[,!\.\s]*$",
-            re.IGNORECASE,
-        )
-
-    def _clean_message(self, message: str) -> str:
-        """Remove greetings prefix but keep meaningful text."""
-        message = message.strip()
-        message = re.sub(
-            r"^(hi|hello|hey|good\s*(morning|evening|afternoon|night)|yo|sup|what'?s up|how are you)[,!\.\s]*(.*)$",
-            r"\3",
-            message,
-            flags=re.IGNORECASE,
-        ).strip()
-        return message
-
-    def should_generate_title(self, messages: list[dict]) -> bool:
-        """Check if the conversation has a meaningful user message."""
-        if not messages:
-            return False
-
-        user_msgs = [m.content for m in messages if m.sender_type == "user"]
-        if not user_msgs:
-            return False
-
-        last_message = user_msgs[-1].strip()
-        cleaned = self._clean_message(last_message)
-
-        if not cleaned or len(cleaned.split()) < 2:
-            return False
-
-        return True
-
-    def generate_title(self, message: str) -> str | None:
-        """Generate a concise 3–6 word title."""
-        cleaned = self._clean_message(message)
-        if not cleaned:
-            return None
-
-        try:
-            prompt = f"Generate a short, 3–6 word title for this conversation topic: '{cleaned}'"
-            response = self.model.invoke([{"role": "user", "content": prompt}])
-            title = response["messages"][-1].content.strip()
-            return title
-        except Exception as e:
-            print(f"[WARN] Title generation failed: {e}")
-            words = cleaned.split()
-            return " ".join(words[:5]) + "..." if len(words) > 5 else cleaned
+        request_count = results[1]  # zcard result (before adding current)
+        if request_count >= RATE_LIMIT_REQUESTS:
+            raise HTTPException(
+                status_code=429,
+                detail="Too many requests. Please wait before trying again.",
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        # Redis error — fail open rather than blocking all users
+        pass
 
 
 # ========================
@@ -117,8 +85,28 @@ class ConversationTitleGenerator:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine, checkfirst=True)
+    global redis_client
+    redis_url = os.getenv("REDIS_URI", "")
+    if redis_url:
+        try:
+            redis_client = aioredis.from_url(
+                redis_url,
+                encoding="utf-8",
+                decode_responses=True,
+                socket_connect_timeout=5,
+            )
+            await redis_client.ping()
+        except Exception as e:
+            print(f"[WARN] Redis unavailable, rate limiting disabled: {e}")
+            redis_client = None
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     yield
+
+    if redis_client:
+        await redis_client.aclose()
 
 
 agent = BibleAssistant()
@@ -143,21 +131,27 @@ def test_health():
 
 
 @app.get("/conversations")
-def get_conversations(
-    user: User = Depends(get_current_user),
-    db=Depends(get_db),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+async def get_conversations(
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    skip: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
 ):
-    total = db.query(Conversation).filter(Conversation.user_id == user.id).count()
-    conversations = (
-        db.query(Conversation)
-        .filter(Conversation.user_id == user.id)
+    result = await db.execute(
+        select(func.count())
+        .select_from(Conversation)
+        .where(Conversation.user_id == user.id)
+    )
+    total = result.scalar()
+
+    result = await db.execute(
+        select(Conversation)
+        .where(Conversation.user_id == user.id)
         .order_by(Conversation.updated_at.desc())
         .offset(skip)
         .limit(limit)
-        .all()
     )
+    conversations = result.scalars().all()
     return {
         "conversations": conversations,
         "total": total,
@@ -166,11 +160,14 @@ def get_conversations(
     }
 
 
-@app.post("/conversations")
+@app.post("/conversations", responses={
+    429: {"description": "Too many requests. Please wait before trying again."}
+})
 async def create_conversation(
-    user: User = Depends(get_current_user), db=Depends(get_db)
-):
-    check_rate_limit(str(user.id))
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> JSONResponse:
+    await check_rate_limit(str(user.id))
 
     new_conv = Conversation(
         user_id=user.id,
@@ -178,91 +175,118 @@ async def create_conversation(
         is_active=True,
         updated_at=datetime.now(timezone.utc),
     )
-
     db.add(new_conv)
-    db.commit()
-    db.refresh(new_conv)
+    await db.commit()
+    await db.refresh(new_conv)
 
-    return {"id": new_conv.id, "user_id": new_conv.user_id, "title": new_conv.title}
+    return JSONResponse({"id": new_conv.id, "user_id": new_conv.user_id, "title": new_conv.title})
 
 
-@app.delete("/conversations/{conversation_id}")
-def delete_conversation(
-    conversation_id: int, user: User = Depends(get_current_user), db=Depends(get_db)
+@app.delete("/conversations/{conversation_id}",
+            responses={404: {"description": ERROR_CONVERSATION_NOT_FOUND}})
+async def delete_conversation(
+    conversation_id: int,
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
     conversation = (
-        db.query(Conversation)
-        .filter(Conversation.id == conversation_id, Conversation.user_id == user.id)
-        .first()
-    )
+        await db.execute(
+            select(Conversation).where(
+                Conversation.id == conversation_id,
+                Conversation.user_id == user.id,
+            )
+        )
+    ).scalar_one_or_none()
 
     if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+        raise HTTPException(
+            status_code=404, detail=ERROR_CONVERSATION_NOT_FOUND)
 
-    db.delete(conversation)
-    db.commit()
+    await db.delete(conversation)
+    await db.commit()
     return {"message": "Conversation deleted"}
 
 
 @app.get("/messages/{conv_id}")
-def get_message(
+async def get_message(
     conv_id: int,
-    user: User = Depends(get_current_user),
-    db=Depends(get_db),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    skip: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
 ):
     conversation = (
-        db.query(Conversation)
-        .filter(Conversation.id == conv_id, Conversation.user_id == user.id)
-        .first()
-    )
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+        await db.execute(
+            select(Conversation).where(
+                Conversation.id == conv_id,
+                Conversation.user_id == user.id,
+            )
+        )
+    ).scalar_one_or_none()
 
-    total = db.query(Message).filter(Message.conversation_id == conv_id).count()
-    messages = (
-        db.query(Message)
-        .filter(Message.conversation_id == conv_id)
+    if not conversation:
+        raise HTTPException(
+            status_code=404, detail=ERROR_CONVERSATION_NOT_FOUND)
+
+    total_result = await db.execute(
+        select(func.count())
+        .select_from(Message)
+        .where(Message.conversation_id == conv_id)
+    )
+    total = total_result.scalar()
+
+    messages_result = await db.execute(
+        select(Message)
+        .where(Message.conversation_id == conv_id)
         .order_by(Message.id.asc())
         .offset(skip)
         .limit(limit)
-        .all()
     )
+    messages = messages_result.scalars().all()
     return {"messages": messages, "total": total, "skip": skip, "limit": limit}
 
 
-@app.post("/query", response_model=AgentQueryResponse)
+@app.post("/query", response_model=AgentQueryResponse,
+          responses={
+              429: {"description": "Too many requests. Please wait before trying again."},
+              404: {"description": ERROR_CONVERSATION_NOT_FOUND},
+          })
 async def query_agent(
     request: AgentQueryRequest,
-    user: User = Depends(get_current_user),
-    db=Depends(get_db),
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    check_rate_limit(str(user.id))
+    await check_rate_limit(str(user.id))
 
     conversation = (
-        db.query(Conversation)
-        .filter(Conversation.id == request.conv_id, Conversation.user_id == user.id)
-        .first()
-    )
+        await db.execute(
+            select(Conversation).where(
+                Conversation.id == request.conv_id,
+                Conversation.user_id == user.id,
+            )
+        )
+    ).scalar_one_or_none()
+
     if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+        raise HTTPException(
+            status_code=404, detail=ERROR_CONVERSATION_NOT_FOUND)
 
     # Save user message
     new_message = Message(
         conversation_id=request.conv_id, sender_type="user", content=request.query
     )
     db.add(new_message)
-    db.commit()
-    db.refresh(new_message)
+    await db.commit()
+    await db.refresh(new_message)
 
     # Load prior messages
     prior_messages = (
-        db.query(Message)
-        .filter(Message.conversation_id == request.conv_id)
-        .order_by(Message.id.asc())
-        .all()
-    )
+        await db.execute(
+            select(Message)
+            .where(Message.conversation_id == request.conv_id)
+            .order_by(Message.id.asc())
+        )
+    ).scalars().all()
 
     formatted_messages = [
         {
@@ -280,12 +304,10 @@ async def query_agent(
         conversation_id=request.conv_id, sender_type="assistant", content=agent_output
     )
     db.add(agent_response)
-    db.commit()
-    db.refresh(agent_response)
+    await db.commit()
+    await db.refresh(agent_response)
 
-    # =============================
-    # Generate conversation title
-    # =============================
+    # Generate conversation title if still default
     if (
         conversation.title == "New Conversation"
         and title_generator.should_generate_title(prior_messages)
@@ -294,8 +316,8 @@ async def query_agent(
         if title:
             conversation.title = title
             conversation.updated_at = datetime.now(timezone.utc)
-            db.commit()
-            db.refresh(conversation)
+            await db.commit()
+            await db.refresh(conversation)
 
     return AgentQueryResponse(
         conv_id=request.conv_id,

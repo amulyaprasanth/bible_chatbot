@@ -1,22 +1,25 @@
+from datetime import datetime
+from typing import Optional, List
+
+from pydantic import BaseModel, ConfigDict
+
 from sqlalchemy import (
-    Column,
-    BigInteger,
-    ForeignKey,
-    Integer,
     String,
     Boolean,
-    TIMESTAMP,
+    ForeignKey,
     Text,
     func,
 )
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
-from pydantic import BaseModel
-from datetime import datetime
-from typing import Optional
-import uuid
+from sqlalchemy.orm import (
+    Mapped,
+    mapped_column,
+    relationship,
+)
+
+from sqlalchemy.types import TIMESTAMP, BigInteger, Integer
 
 from db import Base
+
 
 # ----------------------------------------------------
 # Database Models
@@ -26,43 +29,132 @@ from db import Base
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(BigInteger, primary_key=True, index=True)
-    name = Column(String(255), nullable=False)
-    email = Column(String(255), nullable=False, unique=True, index=True)
-    google_id = Column(String(100), unique=True)
-    auth_provider = Column(String(20), nullable=False, default="google")
-    profile_picture = Column(String(512))
-    email_verified = Column(Boolean, default=True)
-    locale = Column(String(10))
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(
+    id: Mapped[int] = mapped_column(
+        BigInteger,
+        primary_key=True,
+        index=True,
+    )
+
+    name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
+    email: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+
+    google_id: Mapped[str] = mapped_column(
+        String(100),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+
+    auth_provider: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="google",
+    )
+
+    profile_picture: Mapped[Optional[str]] = mapped_column(
+        String(512),
+        nullable=True,
+    )
+
+    email_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+
+    locale: Mapped[Optional[str]] = mapped_column(
+        String(10),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
     )
 
-    # Tokens
-    google_access_token = Column(String, nullable=True)
-    google_refresh_token = Column(String, nullable=True)
-    google_token_expiry = Column(TIMESTAMP(timezone=True), nullable=True)
+    # Google OAuth tokens
+
+    google_access_token: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    google_refresh_token: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    google_token_expiry: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
+    )
 
     # Relationships
-    conversations = relationship(
-        "Conversation", back_populates="user", cascade="all, delete"
+
+    conversations: Mapped[List["Conversation"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="noload",
     )
 
 
 class Conversation(Base):
     __tablename__ = "conversations"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    title = Column(String(255), nullable=False)
-    is_active = Column(Boolean, default=True)
-    language = Column(String(10), nullable=False, default="english")
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+
+    user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+
+    language: Mapped[str] = mapped_column(
+        String(10),
+        default="english",
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
@@ -70,30 +162,63 @@ class Conversation(Base):
     )
 
     # Relationships
-    user = relationship("User", back_populates="conversations")
-    messages = relationship(
-        "Message", back_populates="conversation", cascade="all, delete"
+
+    user: Mapped["User"] = relationship(
+        back_populates="conversations",
+        lazy="noload",
+    )
+
+    messages: Mapped[List["Message"]] = relationship(
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        lazy="noload",
     )
 
 
 class Message(Base):
     __tablename__ = "messages"
 
-    id = Column(Integer, primary_key=True, index=True)
-    conversation_id = Column(
-        Integer, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True,
     )
-    sender_type = Column(String(10), nullable=False)
-    content = Column(Text, nullable=False)
-    sent_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
 
-    # Relationship back to Conversation
-    conversation = relationship("Conversation", back_populates="messages")
+    conversation_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    sender_type: Mapped[str] = mapped_column(
+        String(10),
+        nullable=False,
+    )
+
+    content: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    sent_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    # Relationships
+
+    conversation: Mapped["Conversation"] = relationship(
+        back_populates="messages",
+        lazy="noload",
+    )
 
 
 # ----------------------------------------------------
 # Pydantic Schemas
 # ----------------------------------------------------
+
 
 class GoogleLoginRequest(BaseModel):
     code: str
@@ -120,16 +245,15 @@ class GoogleTokenResponse(BaseModel):
 
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     email: str
     profile_picture: Optional[str] = None
-    email_verified: bool = True
+    email_verified: bool
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class AgentQueryRequest(BaseModel):

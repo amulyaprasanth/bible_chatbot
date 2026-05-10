@@ -22,6 +22,7 @@ const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
   const menuRef = useRef<HTMLDivElement>(null);
+  const hasCreatedConversation = useRef(false);
 
   // Track window size to determine if we're on desktop
   useEffect(() => {
@@ -61,6 +62,8 @@ const Dashboard = () => {
   // Create new conversation on first login
   useEffect(() => {
     const createNewConversation = async () => {
+      if (hasCreatedConversation.current) return;
+      hasCreatedConversation.current = true;
       try {
         const res = await api.post("/conversations");
         const newConv = res.data;
@@ -69,6 +72,7 @@ const Dashboard = () => {
         setMessages([]);
       } catch (err) {
         console.error("Error creating new conversation:", err);
+        hasCreatedConversation.current = false; // allow retry on error
       }
     };
 
@@ -98,14 +102,12 @@ const Dashboard = () => {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="h-screen w-full flex items-center justify-center bg-[#F1F5F9] dark:bg-[#0F172A]"
-      >
+        className="h-screen w-full flex items-center justify-center bg-[#F1F5F9] dark:bg-[#0F172A]">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="flex flex-col items-center gap-4"
-        >
+          className="flex flex-col items-center gap-4">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -124,22 +126,19 @@ const Dashboard = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="h-screen w-full flex flex-col bg-[#F1F5F9] dark:bg-[#0F172A] text-gray-900 dark:text-gray-100 overflow-hidden"
-    >
+      className="h-screen w-full flex flex-col bg-[#F1F5F9] dark:bg-[#0F172A] text-gray-900 dark:text-gray-100 overflow-hidden">
       {/* ===== Top Banner ===== */}
       <motion.div
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-screen flex justify-between items-center px-4 md:px-6 py-3 md:py-4 bg-[#1E293B] text-white shadow-md z-10"
-      >
+        className="w-screen flex justify-between items-center px-4 md:px-6 py-3 md:py-4 bg-[#1E293B] text-white shadow-md z-10">
         {/* Hamburger Menu Button (Mobile only) */}
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="md:hidden text-white focus:outline-none p-2"
-        >
+          className="md:hidden text-white focus:outline-none p-2">
           {sidebarOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
         </motion.button>
 
@@ -148,8 +147,7 @@ const Dashboard = () => {
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-          className="text-xl md:text-3xl font-bold font-poppins tracking-wide"
-        >
+          className="text-xl md:text-3xl font-bold font-poppins tracking-wide">
           Verse<span className="text-blue-400">Chat</span>
         </motion.h1>
 
@@ -159,8 +157,7 @@ const Dashboard = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowMenu((prev) => !prev)}
-            className="flex items-center gap-3 focus:outline-none"
-          >
+            className="flex items-center gap-3 focus:outline-none">
             {user?.profile_picture && !imageError ? (
               <motion.img
                 key={user.profile_picture}
@@ -177,8 +174,7 @@ const Dashboard = () => {
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 200 }}
-              >
+                transition={{ type: "spring", stiffness: 200 }}>
                 <FaUserCircle size={36} className="text-white" />
               </motion.div>
             )}
@@ -192,15 +188,13 @@ const Dashboard = () => {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className="absolute right-0 mt-3 w-52 md:w-56 bg-white dark:bg-[#1E293B] rounded-lg shadow-xl ring-1 ring-black ring-opacity-5 z-50 overflow-hidden"
-              >
+                className="absolute right-0 mt-3 w-52 md:w-56 bg-white dark:bg-[#1E293B] rounded-lg shadow-xl ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
                 {/* Profile Info */}
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700"
-                >
+                  className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                   {user?.profile_picture && !imageError ? (
                     <img
                       key={user.profile_picture}
@@ -228,8 +222,7 @@ const Dashboard = () => {
                   whileHover={{ backgroundColor: "#F3F4F6" }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleLogout}
-                  className="block w-full text-left px-5 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#334155] transition"
-                >
+                  className="block w-full text-left px-5 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#334155] transition">
                   Sign out
                 </motion.button>
               </motion.div>
@@ -264,8 +257,7 @@ const Dashboard = () => {
             w-64 md:w-1/5 bg-[#F8FAFC] dark:bg-[#111827] 
             border-r border-gray-200 dark:border-gray-700
             md:translate-x-0
-          `}
-        >
+          `}>
           <Conversations
             convList={convList}
             setConvList={setConvList}
@@ -278,8 +270,7 @@ const Dashboard = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.3 }}
-          className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0F172A] w-full"
-        >
+          className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0F172A] w-full">
           <ChatContainer user={user} setConvList={setConvList} />
         </motion.div>
       </div>

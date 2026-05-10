@@ -1,0 +1,17 @@
+fastapi[standard]
+sqlalchemy
+python-dotenv
+langchain
+langchain-groq
+google-auth
+pyjwt
+langchain-community
+wikipedia
+duckduckgo-search
+ddgs
+cryptography
+google-auth-oauthlib
+asyncpg
+httpx
+redis[asyncio]
+certifi

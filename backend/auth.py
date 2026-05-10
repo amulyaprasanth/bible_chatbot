@@ -1,6 +1,7 @@
 import datetime
 import os
-import requests
+import ssl
+import certifi
 import jwt
 from jwt import InvalidTokenError, ExpiredSignatureError
 from fastapi import Depends, APIRouter, HTTPException, status, Request, BackgroundTasks
@@ -8,11 +9,13 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import JSONResponse
 from google.oauth2 import id_token
 from google.auth.transport.requests import Request as GoogleRequest
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+import httpx
 from sqlalchemy.exc import IntegrityError
 from dotenv import load_dotenv
 import logging
-from typing import Optional
+from typing import Annotated
 
 from db import get_db
 from models import (
@@ -30,14 +33,22 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
+
+def _http_client() -> httpx.AsyncClient:
+    """Return an AsyncClient with a verified SSL context."""
+    return httpx.AsyncClient(verify=_ssl_context, timeout=30)
+
+
 # === CONFIGS ===
-CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-TOKEN_URI = os.getenv("GOOGLE_TOKEN_URI", "https://oauth2.googleapis.com/token")
-REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
-SECRET_KEY = os.getenv("SECRET_KEY")
+CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+TOKEN_URI = os.getenv("GOOGLE_TOKEN_URI",
+                      "https://oauth2.googleapis.com/token", )
+REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "")
+SECRET_KEY = os.getenv("SECRET_KEY", "")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(
+    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "150"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 GOOGLE_TOKEN_BUFFER_MINUTES = int(
     # Refresh 5 min before expiry
@@ -48,7 +59,8 @@ GOOGLE_TOKEN_BUFFER_MINUTES = int(
 required_env_vars = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "SECRET_KEY"]
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
-    raise RuntimeError(f"Missing required environment variables: {missing_vars}")
+    raise RuntimeError(
+        f"Missing required environment variables: {missing_vars}")
 
 # === CONSTANTS ===
 ERROR_INVALID_TOKEN_PAYLOAD = "Invalid token payload"
@@ -62,7 +74,8 @@ def create_access_token(data: dict):
     expire = datetime.datetime.now(datetime.UTC) + datetime.timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES
     )
-    to_encode = {**data, "exp": expire, "scope": "access_token", "type": "access"}
+    to_encode = {**data, "exp": expire,
+                 "scope": "access_token", "type": "access"}
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -70,7 +83,8 @@ def create_refresh_token(data: dict):
     expire = datetime.datetime.now(datetime.UTC) + datetime.timedelta(
         days=REFRESH_TOKEN_EXPIRE_DAYS
     )
-    to_encode = {**data, "exp": expire, "scope": "refresh_token", "type": "refresh"}
+    to_encode = {**data, "exp": expire,
+                 "scope": "refresh_token", "type": "refresh"}
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -80,7 +94,7 @@ def validate_token_payload(payload: dict) -> bool:
     return all(field in payload for field in required_fields)
 
 
-def get_current_user(request: Request, db: Session = Depends(get_db)):
+async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)):
     """Extract and validate the current user from cookies."""
     token = request.cookies.get("access_token")
 
@@ -104,7 +118,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
                 detail=ERROR_INVALID_TOKEN_SCOPE,
             )
 
-        user_id: str = payload.get("sub")
+        user_id: str | None = payload.get("sub")
         if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -121,7 +135,11 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )
 
-    user = db.query(User).filter(User.id == user_id).first()
+    result = await db.execute(
+        select(User).where(User.id == user_id))
+
+    user = result.scalar_one_or_none()
+
     if not user:
         logger.warning(f"User not found for ID: {user_id}")
         raise HTTPException(
@@ -134,9 +152,9 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 # === GOOGLE TOKEN MANAGEMENT ===
 
 
-def refresh_google_tokens(user: User, db: Session) -> bool:
+async def refresh_google_tokens(user: User, db: AsyncSession) -> bool:
     """Refresh Google OAuth tokens for a user"""
-    if not user.google_refresh_token:
+    if user.google_refresh_token is not None:
         logger.warning(f"No Google refresh token for user {user.id}")
         return False
 
@@ -148,7 +166,9 @@ def refresh_google_tokens(user: User, db: Session) -> bool:
             "grant_type": "refresh_token",
         }
 
-        response = requests.post(TOKEN_URI, data=data, timeout=30)
+        async with _http_client() as client:
+            response = await client.post(TOKEN_URI,
+                                         data=data)
         response.raise_for_status()
         tokens = response.json()
 
@@ -163,39 +183,46 @@ def refresh_google_tokens(user: User, db: Session) -> bool:
             )
             user.google_token_expiry = expiry_time
 
-        db.commit()
+        await db.commit()
         logger.info(f"Google tokens refreshed for user {user.id}")
         return True
 
-    except requests.RequestException as e:
-        logger.error(f"Failed to refresh Google tokens for user {user.id}: {str(e)}")
+    except httpx.RequestError as e:
+        logger.error(
+            f"Failed to refresh Google tokens for user {user.id}: {str(e)}")
         return False
     except Exception as e:
         logger.error(
             f"Unexpected error refreshing Google tokens for user {user.id}: {str(e)}"
         )
-        db.rollback()
+        await db.rollback()
         return False
 
 
 def is_google_token_expired(user: User) -> bool:
     """Check if Google token is expired or about to expire"""
-    if not user.google_token_expiry:
+
+    expiry = user.google_token_expiry
+
+    if expiry is None:
         return True
 
-    buffer_time = datetime.timedelta(minutes=GOOGLE_TOKEN_BUFFER_MINUTES)
-    # Use timezone-aware datetime to match database TIMESTAMP(timezone=True)
+    buffer_time = datetime.timedelta(
+        minutes=GOOGLE_TOKEN_BUFFER_MINUTES
+    )
+
     current_time = datetime.datetime.now(datetime.UTC)
-    return current_time >= (user.google_token_expiry - buffer_time)
+
+    return current_time >= (expiry - buffer_time)  # type:ignore
 
 
-def ensure_valid_google_tokens(user: User, db: Session) -> bool:
+async def ensure_valid_google_tokens(user: User, db: AsyncSession) -> bool:
     """Ensure Google tokens are valid, refresh if needed"""
-    if not user.google_refresh_token:
+    if user.google_refresh_token is None:
         return False
 
     if is_google_token_expired(user):
-        return refresh_google_tokens(user, db)
+        return await refresh_google_tokens(user, db)
 
     return True
 
@@ -205,7 +232,8 @@ def ensure_valid_google_tokens(user: User, db: Session) -> bool:
 
 @router.post("/google", status_code=status.HTTP_200_OK)
 async def google_login(
-    login_request: GoogleLoginRequest, db: Session = Depends(get_db)
+    login_request: GoogleLoginRequest,
+        db: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Login or register via Google OAuth"""
     if not login_request.code or len(login_request.code) < 10:
@@ -223,12 +251,18 @@ async def google_login(
 
     try:
         # Exchange code for tokens
-        response = requests.post(TOKEN_URI, data=token_data.model_dump(), timeout=30)
+        async with _http_client() as client:
+            response = await client.post(
+                TOKEN_URI,
+                data=token_data.model_dump()
+            )
+
         response.raise_for_status()
         response_json = response.json()
 
         if "error" in response_json:
-            error_msg = response_json.get("error_description", "Google login failed")
+            error_msg = response_json.get(
+                "error_description", "Google login failed")
             logger.error(f"Google token error: {error_msg}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Authentication failed"
@@ -252,7 +286,11 @@ async def google_login(
         picture = id_info.get("picture", "")
 
         # Find or create user
-        user = db.query(User).filter(User.email == email).first()
+        result = await db.execute(select(User)
+                                  .where(User.email == email))
+
+        user = result.scalar_one_or_none()
+
         if not user:
             user = User(
                 name=name,
@@ -263,13 +301,14 @@ async def google_login(
             )
             db.add(user)
             try:
-                db.commit()
-                db.refresh(user)
+                await db.commit()
+                await db.refresh(user)
                 logger.info(f"New user created: {email}")
             except IntegrityError:
-                db.rollback()
+                await db.rollback()
                 # User might have been created by another process, try to fetch again
-                user = db.query(User).filter(User.email == email).first()
+                result = await db.execute(select(User).where(User.email == email))
+                user = result.scalar_one_or_none()
                 if not user:
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -288,7 +327,7 @@ async def google_login(
             )
             user.google_token_expiry = expiry_time
 
-        db.commit()
+        await db.commit()
 
         # Create app tokens
         access_token = create_access_token({"sub": str(user.id)})
@@ -312,7 +351,7 @@ async def google_login(
             value=access_token,
             httponly=True,
             secure=True,
-            samesite="None",
+            samesite=None,
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             path="/",
         )
@@ -321,14 +360,14 @@ async def google_login(
             value=refresh_token,
             httponly=True,
             secure=True,
-            samesite="None",
+            samesite=None,
             max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
             path="/",
         )
 
         return response
 
-    except requests.RequestException as e:
+    except httpx.RequestError as e:
         logger.error(f"Google token exchange failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -352,8 +391,8 @@ async def google_login(
 
 
 @router.post("/refresh", status_code=status.HTTP_200_OK)
-def refresh_token(
-    request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+async def refresh_token(
+    request: Request, background_tasks: BackgroundTasks, db: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Refresh app-level JWT using stored refresh cookie"""
     token = request.cookies.get("refresh_token")
@@ -385,7 +424,12 @@ def refresh_token(
             )
 
         # Optionally refresh Google tokens in background
-        user = db.query(User).filter(User.id == user_id).first()
+        result = await db.execute(
+            select(User).where(User.id == user_id)
+        )
+
+        user = result.scalar_one_or_none()
+
         if user and user.google_refresh_token:
             background_tasks.add_task(ensure_valid_google_tokens, user, db)
 
@@ -396,7 +440,7 @@ def refresh_token(
             value=new_access_token,
             httponly=True,
             secure=True,
-            samesite="None",
+            samesite=None,
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             path="/",
         )
@@ -412,7 +456,7 @@ def refresh_token(
         )
 
 
-def _attempt_token_refresh(refresh_token: str, db: Session) -> JSONResponse:
+async def _attempt_token_refresh(refresh_token: str, db: Annotated[AsyncSession, Depends(get_db)]) -> JSONResponse:
     """Helper to refresh access token from refresh token"""
     try:
         payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -437,18 +481,23 @@ def _attempt_token_refresh(refresh_token: str, db: Session) -> JSONResponse:
             )
 
         # Refresh Google tokens if needed
-        user = db.query(User).filter(User.id == user_id).first()
+        result = await db.execute(
+            select(User).where(User.id == user_id)
+        )
+        user = result.scalar_one_or_none()
+
         if user:
-            ensure_valid_google_tokens(user, db)
+            await ensure_valid_google_tokens(user, db)
 
         new_access_token = create_access_token({"sub": user_id})
-        response = JSONResponse(content={"authenticated": True, "refreshed": True})
+        response = JSONResponse(
+            content={"authenticated": True, "refreshed": True})
         response.set_cookie(
             key="access_token",
             value=new_access_token,
             httponly=True,
             secure=True,
-            samesite="None",
+            samesite=None,
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             path="/",
         )
@@ -465,7 +514,7 @@ def _attempt_token_refresh(refresh_token: str, db: Session) -> JSONResponse:
 
 
 @router.get("/check")
-def check_auth(request: Request, db: Session = Depends(get_db)):
+async def check_auth(request: Request, db: Annotated[AsyncSession, Depends(get_db)]) -> JSONResponse:
     """Check if user is authenticated; auto-refresh if access expired"""
     token = request.cookies.get("access_token")
     if not token:
@@ -479,11 +528,12 @@ def check_auth(request: Request, db: Session = Depends(get_db)):
         # Token is valid, check Google tokens if user exists
         user_id = payload.get("sub")
         if user_id:
-            user = db.query(User).filter(User.id == user_id).first()
+            result = await db.execute(select(User).where(User.id == user_id))
+            user = result.scalar_one_or_none()
             if user:
-                ensure_valid_google_tokens(user, db)
+                await ensure_valid_google_tokens(user, db)
 
-        return {"authenticated": True, "refreshed": False}
+        return JSONResponse({"authenticated": True, "refreshed": False})
 
     except ExpiredSignatureError:
         # Try to refresh token silently
@@ -492,7 +542,7 @@ def check_auth(request: Request, db: Session = Depends(get_db)):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="expired"
             )
-        return _attempt_token_refresh(refresh_token, db)
+        return await _attempt_token_refresh(refresh_token, db)
 
     except InvalidTokenError:
         raise HTTPException(
@@ -504,9 +554,9 @@ def check_auth(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/google/refresh", status_code=status.HTTP_200_OK)
-def refresh_google_token(request: Request, db: Session = Depends(get_db)):
+async def refresh_google_token(request: Request, db: Annotated[AsyncSession, Depends(get_db)]) -> JSONResponse:
     """Refresh Google OAuth tokens using stored Google refresh token"""
-    user = get_current_user(request, db)
+    user = await get_current_user(request, db)
 
     if not user.google_refresh_token:
         raise HTTPException(
@@ -514,35 +564,35 @@ def refresh_google_token(request: Request, db: Session = Depends(get_db)):
             detail="No Google refresh token available",
         )
 
-    success = refresh_google_tokens(user, db)
+    success = await refresh_google_tokens(user, db)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Failed to refresh Google tokens",
         )
 
-    return {
+    return JSONResponse({
         "message": "Google tokens refreshed successfully",
         "google_access_token": user.google_access_token,
         "expires_at": user.google_token_expiry.isoformat()
         if user.google_token_expiry
         else None,
-    }
+    })
 
 
 # === GET CURRENT USER ===
 
 
 @router.get("/user")
-def get_user(user: User = Depends(get_current_user)):
+def get_user(user: Annotated[User, Depends(get_current_user)]) -> JSONResponse:
     """Return the currently authenticated user's details."""
-    return {
+    return JSONResponse({
         "id": str(user.id),
         "name": user.name,
         "email": user.email,
         "profile_picture": user.profile_picture,
         "auth_provider": user.auth_provider,
-    }
+    })
 
 
 # === LOGOUT ===
@@ -555,10 +605,10 @@ def logout():
 
     # Must match the attributes used when setting cookies
     response.delete_cookie(
-        key="access_token", path="/", secure=True, httponly=True, samesite="None"
+        key="access_token", path="/", secure=True, httponly=True, samesite=None
     )
     response.delete_cookie(
-        key="refresh_token", path="/", secure=True, httponly=True, samesite="None"
+        key="refresh_token", path="/", secure=True, httponly=True, samesite=None
     )
 
     return response
