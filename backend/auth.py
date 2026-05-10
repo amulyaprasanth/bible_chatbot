@@ -33,6 +33,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
+# SSL context: use certifi's CA bundle on Windows/macOS dev; default elsewhere
+_ssl_context = ssl.create_default_context(cafile=certifi.where())
+
 
 def _http_client() -> httpx.AsyncClient:
     """Return an AsyncClient with a verified SSL context."""
@@ -351,7 +354,7 @@ async def google_login(
             value=access_token,
             httponly=True,
             secure=True,
-            samesite=None,
+            samesite="none",
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             path="/",
         )
@@ -360,7 +363,7 @@ async def google_login(
             value=refresh_token,
             httponly=True,
             secure=True,
-            samesite=None,
+            samesite="none",
             max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
             path="/",
         )
@@ -440,7 +443,7 @@ async def refresh_token(
             value=new_access_token,
             httponly=True,
             secure=True,
-            samesite=None,
+            samesite="none",
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             path="/",
         )
@@ -497,7 +500,7 @@ async def _attempt_token_refresh(refresh_token: str, db: Annotated[AsyncSession,
             value=new_access_token,
             httponly=True,
             secure=True,
-            samesite=None,
+            samesite="none",
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             path="/",
         )
@@ -605,10 +608,10 @@ def logout():
 
     # Must match the attributes used when setting cookies
     response.delete_cookie(
-        key="access_token", path="/", secure=True, httponly=True, samesite=None
+        key="access_token", path="/", secure=True, httponly=True, samesite="none"
     )
     response.delete_cookie(
-        key="refresh_token", path="/", secure=True, httponly=True, samesite=None
+        key="refresh_token", path="/", secure=True, httponly=True, samesite="none"
     )
 
     return response
