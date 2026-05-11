@@ -138,16 +138,19 @@ const Dashboard = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="md:hidden text-white focus:outline-none p-2">
-          {sidebarOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+          className="md:hidden text-white focus:outline-none p-2 shrink-0">
+          {sidebarOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
         </motion.button>
+
+        {/* Invisible spacer on desktop to keep title centered */}
+        <div className="hidden md:block w-10" />
 
         {/* Title */}
         <motion.h1
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-          className="text-base md:text-3xl font-bold font-poppins tracking-wide truncate px-2">
+          className="flex-1 text-center text-sm md:text-3xl font-bold font-poppins tracking-wide">
           Verse<span className="text-blue-400">Chat</span>
         </motion.h1>
 
