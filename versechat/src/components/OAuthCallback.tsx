@@ -35,9 +35,10 @@ const OAuthCallback = () => {
 
     const exchangeCode = async () => {
       try {
+        const redirectUri = `${globalThis.location.origin}/auth/callback`;
         const res = await api.post(
           "/auth/google",
-          { code },
+          { code, redirect_uri: redirectUri },
           { withCredentials: true },
         );
 
