@@ -9,6 +9,7 @@ import Dashboard from "./components/Dashboard";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { Home } from "./components/Home";
 import Login from "./components/Login";
+import OAuthCallback from "./components/OAuthCallback";
 import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 import { PublicRoute } from "./components/PublicRoute";
 import { AuthProvider } from "./context/AuthProvider";
@@ -38,6 +39,8 @@ function App() {
                     </PublicRoute>
                   }
                 />
+                {/* Google OAuth redirect callback */}
+                <Route path="/auth/callback" element={<OAuthCallback />} />
 
                 <Route element={<ProtectedRoute />}>
                   <Route path="/dashboard" element={<Dashboard />} />
