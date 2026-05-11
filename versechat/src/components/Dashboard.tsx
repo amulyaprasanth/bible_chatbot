@@ -126,7 +126,7 @@ const Dashboard = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="h-screen w-full flex flex-col bg-[#F1F5F9] dark:bg-[#0F172A] text-gray-900 dark:text-gray-100 overflow-hidden">
+      className="h-[100dvh] w-full flex flex-col bg-[#F1F5F9] dark:bg-[#0F172A] text-gray-900 dark:text-gray-100 overflow-hidden">
       {/* ===== Top Banner ===== */}
       <motion.div
         initial={{ y: -50, opacity: 0 }}
@@ -241,7 +241,7 @@ const Dashboard = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSidebarOpen(false)}
-              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              className="fixed inset-x-0 bottom-0 top-[57px] bg-black/50 z-40 md:hidden"
             />
           )}
         </AnimatePresence>
@@ -254,8 +254,9 @@ const Dashboard = () => {
           }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
           className={`fixed md:static inset-y-0 left-0 z-50 md:z-auto
-            w-64 md:w-1/5 bg-[#F8FAFC] dark:bg-[#111827] 
+            w-72 md:w-1/5 bg-[#F8FAFC] dark:bg-[#111827] 
             border-r border-gray-200 dark:border-gray-700
+            top-[57px] md:top-0
             md:translate-x-0
           `}>
           <Conversations
@@ -270,7 +271,7 @@ const Dashboard = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.3 }}
-          className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0F172A] w-full">
+          className="flex-1 flex flex-col min-w-0 min-h-0 bg-white dark:bg-[#0F172A] w-full">
           <ChatContainer user={user} setConvList={setConvList} />
         </motion.div>
       </div>
