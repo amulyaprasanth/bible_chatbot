@@ -139,7 +139,7 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
         )
 
     result = await db.execute(
-        select(User).where(User.id == user_id))
+        select(User).where(User.id == int(user_id)))
 
     user = result.scalar_one_or_none()
 
@@ -531,7 +531,7 @@ async def check_auth(request: Request, db: Annotated[AsyncSession, Depends(get_d
         # Token is valid, check Google tokens if user exists
         user_id = payload.get("sub")
         if user_id:
-            result = await db.execute(select(User).where(User.id == user_id))
+            result = await db.execute(select(User).where(User.id == int(user_id)))
             user = result.scalar_one_or_none()
             if user:
                 await ensure_valid_google_tokens(user, db)
