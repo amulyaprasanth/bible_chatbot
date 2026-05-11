@@ -222,9 +222,9 @@ class Message(Base):
 
 class GoogleLoginRequest(BaseModel):
     code: str
-    scope: str
-    authuser: str
-    prompt: str
+    scope: Optional[str] = None
+    authuser: Optional[str] = None
+    prompt: Optional[str] = None
 
 
 class GoogleTokenRequest(BaseModel):
