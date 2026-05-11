@@ -95,7 +95,7 @@ async def lifespan(app: FastAPI):
                 decode_responses=True,
                 socket_connect_timeout=5,
             )
-            await redis_client.ping()
+            redis_client.ping()
         except Exception as e:
             print(f"[WARN] Redis unavailable, rate limiting disabled: {e}")
             redis_client = None

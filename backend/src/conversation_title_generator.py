@@ -1,8 +1,10 @@
 import re
 import os
-from typing import Union
+from typing import Sequence, Union
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
+
+from models import Message
 
 load_dotenv()
 groq_api_key = os.getenv("GROQ_API_KEY")
@@ -18,8 +20,7 @@ class ConversationTitleGenerator:
     """
 
     def __init__(self):
-        self.model = ChatGroq(model="llama-3.1-8b-instant",
-                              groq_api_key=groq_api_key)
+        self.model = ChatGroq(model="llama-3.1-8b-instant")
         self.greeting_pattern = re.compile(
             r"^(hi|hello|hey|good\s*(morning|evening|afternoon|night)|yo|sup|what'?s up|how are you)[,!\.\s]*$",
             re.IGNORECASE,
@@ -42,7 +43,7 @@ class ConversationTitleGenerator:
             return msg.get(field, "")
         return getattr(msg, field, "")
 
-    def should_generate_title(self, messages: list) -> bool:
+    def should_generate_title(self, messages: Sequence[Message]) -> bool:
         """
         Returns True if the conversation should have a title generated.
         Accepts either ORM Message objects or dicts with sender_type/content.
