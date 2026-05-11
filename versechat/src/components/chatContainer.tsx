@@ -160,7 +160,7 @@ const ChatContainer = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
-              className="flex flex-col items-center justify-center min-h-[60vh] px-2">
+              className="flex flex-col items-center justify-center min-h-[calc(100dvh-10rem)] px-2">
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
@@ -186,7 +186,7 @@ const ChatContainer = ({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="text-gray-400 text-sm md:text-base text-center mb-8 max-w-sm">
+                className="text-gray-400 text-sm md:text-base text-center mb-6 max-w-sm">
                 Ask anything about the Bible — verses, stories, guidance, or
                 reflection.
               </motion.p>
@@ -196,10 +196,10 @@ const ChatContainer = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
+                className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg mb-6">
                 {SUGGESTED_PROMPTS.map((prompt, i) => (
                   <motion.button
-                    key={i}
+                    key={prompt.text}
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.45 + i * 0.07 }}
@@ -216,6 +216,42 @@ const ChatContainer = ({
                     <span className="leading-snug">{prompt.text}</span>
                   </motion.button>
                 ))}
+              </motion.div>
+
+              {/* Inline input below the cards */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.65 }}
+                className="w-full max-w-lg">
+                <p className="text-xs text-gray-500 text-center mb-2 tracking-wide uppercase">
+                  or enter your own question
+                </p>
+                <div className="flex items-end gap-2 bg-gray-800 border border-gray-600 rounded-2xl px-3 py-2 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all">
+                  <textarea
+                    value={userMessage}
+                    onChange={(e) => setUserMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask something…"
+                    rows={1}
+                    className="flex-1 resize-none bg-transparent text-white placeholder-gray-500 focus:outline-none text-sm md:text-base leading-snug py-0.5"
+                    style={{ maxHeight: "80px" }}
+                    onInput={(e) => {
+                      const t = e.currentTarget;
+                      t.style.height = "auto";
+                      t.style.height = `${Math.min(t.scrollHeight, 80)}px`;
+                    }}
+                  />
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={handleSend}
+                    disabled={!userMessage.trim()}
+                    className="p-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed rounded-full shrink-0 transition-colors touch-manipulation"
+                    aria-label="Send message">
+                    <FaPaperPlane className="text-white text-sm" />
+                  </motion.button>
+                </div>
               </motion.div>
             </motion.div>
           )}
@@ -268,44 +304,49 @@ const ChatContainer = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* ===== Input area — flex item, always visible at bottom ===== */}
-      <motion.div
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="shrink-0 bg-gray-800 border-t border-gray-700 px-3 md:px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-        {rateLimitError && (
+      {/* ===== Bottom input bar — hidden when welcome card is showing ===== */}
+      <AnimatePresence>
+        {!isEmpty && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="mb-2 px-3 py-2 bg-red-500/20 border border-red-500 rounded-lg text-red-300 text-sm text-center">
-            {rateLimitError}
+            key="bottom-bar"
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 50, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="shrink-0 bg-gray-800 border-t border-gray-700 px-3 md:px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+            {rateLimitError && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="mb-2 px-3 py-2 bg-red-500/20 border border-red-500 rounded-lg text-red-300 text-sm text-center">
+                {rateLimitError}
+              </motion.div>
+            )}
+            <div className="flex items-end gap-2 md:gap-3">
+              <textarea
+                ref={textareaRef}
+                value={userMessage}
+                onChange={(e) => setUserMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your message… (Shift+Enter for new line)"
+                rows={1}
+                className="flex-1 resize-none bg-gray-700 text-white placeholder-gray-400 px-3 md:px-4 py-2.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm md:text-base leading-snug overflow-hidden"
+                style={{ maxHeight: "120px" }}
+              />
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-full transition-colors shrink-0 mb-0.5 touch-manipulation"
+                aria-label="Send message"
+                onClick={handleSend}
+                disabled={thinking || !userMessage.trim()}>
+                <FaPaperPlane className="text-white text-base md:text-lg" />
+              </motion.button>
+            </div>
           </motion.div>
         )}
-
-        <div className="flex items-end gap-2 md:gap-3">
-          <textarea
-            ref={textareaRef}
-            value={userMessage}
-            onChange={(e) => setUserMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message… (Shift+Enter for new line)"
-            rows={1}
-            className="flex-1 resize-none bg-gray-700 text-white placeholder-gray-400 px-3 md:px-4 py-2.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm md:text-base leading-snug overflow-hidden"
-            style={{ maxHeight: "120px" }}
-          />
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className="p-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-full transition-colors shrink-0 mb-0.5 touch-manipulation"
-            aria-label="Send message"
-            onClick={handleSend}
-            disabled={thinking || !userMessage.trim()}>
-            <FaPaperPlane className="text-white text-base md:text-lg" />
-          </motion.button>
-        </div>
-      </motion.div>
+      </AnimatePresence>
     </div>
   );
 };

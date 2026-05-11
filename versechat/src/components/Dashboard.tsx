@@ -132,7 +132,7 @@ const Dashboard = () => {
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-screen flex justify-between items-center px-4 md:px-6 py-3 md:py-4 bg-[#1E293B] text-white shadow-md z-10">
+        className="w-full flex justify-between items-center px-3 md:px-6 py-3 md:py-4 bg-[#1E293B] text-white shadow-md z-10 gap-2">
         {/* Hamburger Menu Button (Mobile only) */}
         <motion.button
           whileHover={{ scale: 1.05 }}
@@ -147,7 +147,7 @@ const Dashboard = () => {
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-          className="text-xl md:text-3xl font-bold font-poppins tracking-wide">
+          className="text-base md:text-3xl font-bold font-poppins tracking-wide truncate px-2">
           Verse<span className="text-blue-400">Chat</span>
         </motion.h1>
 
