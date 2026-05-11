@@ -51,8 +51,8 @@ REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "")
 SECRET_KEY = os.getenv("SECRET_KEY", "")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(
-    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "150"))
-REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
+    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30"))
 GOOGLE_TOKEN_BUFFER_MINUTES = int(
     # Refresh 5 min before expiry
     os.getenv("GOOGLE_TOKEN_BUFFER_MINUTES", "5")
@@ -157,7 +157,7 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
 
 async def refresh_google_tokens(user: User, db: AsyncSession) -> bool:
     """Refresh Google OAuth tokens for a user"""
-    if user.google_refresh_token is not None:
+    if user.google_refresh_token is None:
         logger.warning(f"No Google refresh token for user {user.id}")
         return False
 

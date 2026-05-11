@@ -13,10 +13,15 @@ const api = axios.create({
 });
 
 let isRefreshing = false;
-let refreshQueue: Array<(token: string) => void> = [];
+let refreshQueue: Array<{
+  resolve: () => void;
+  reject: (err: unknown) => void;
+}> = [];
 
 const processQueue = (error: unknown = null) => {
-  refreshQueue.forEach((cb) => (error ? cb("") : cb("")));
+  refreshQueue.forEach(({ resolve, reject }) =>
+    error ? reject(error) : resolve(),
+  );
   refreshQueue = [];
 };
 
@@ -36,12 +41,9 @@ api.interceptors.response.use(
 
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
-          refreshQueue.push((token: string) => {
-            if (token) {
-              resolve(api(originalRequest));
-            } else {
-              reject(error);
-            }
+          refreshQueue.push({
+            resolve: () => resolve(api(originalRequest)),
+            reject: (err) => reject(err),
           });
         });
       }
