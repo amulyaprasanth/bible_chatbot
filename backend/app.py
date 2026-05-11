@@ -95,7 +95,7 @@ async def lifespan(app: FastAPI):
                 decode_responses=True,
                 socket_connect_timeout=5,
             )
-            redis_client.ping()
+            await redis_client.ping() # type: ignore
         except Exception as e:
             print(f"[WARN] Redis unavailable, rate limiting disabled: {e}")
             redis_client = None
@@ -128,6 +128,26 @@ app.add_middleware(
 @app.get("/health", status_code=200)
 def test_health():
     return {"status": "Server is healthy!"}
+
+@app.get("/redis-test")
+async def redis_test():
+    if redis_client is None:
+        return {"status": "redis not connected"}
+
+    try:
+        await redis_client.set("test_key", "hello", ex=30)
+        value = await redis_client.get("test_key")
+
+        return {
+            "status": "redis working",
+            "value": value,
+        }
+
+    except Exception as e:
+        return {
+            "status": "redis error",
+            "error": str(e),
+        }
 
 
 @app.get("/conversations")
