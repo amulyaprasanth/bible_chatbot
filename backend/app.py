@@ -317,7 +317,7 @@ async def query_agent(
     ]
 
     # Ask the Bible assistant
-    agent_output = agent.ask(request.query, messages=formatted_messages[:-1])
+    agent_output = await agent.ask(request.query, messages=formatted_messages[:-1])
 
     # Save assistant response
     agent_response = Message(
