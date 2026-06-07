@@ -15,3 +15,7 @@ asyncpg
 httpx
 redis[asyncio]
 certifi
+
+# eval
+ragas
+

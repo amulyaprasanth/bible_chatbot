@@ -158,4 +158,5 @@ if __name__ == "__main__":
     assistant = BibleAssistant()
     query = "who is jesus christ?"
     print("User:", query)
-    print("Assistant:", assistant.ask(query))
+    result = assistant.ask(query)
+    print(result)

@@ -2,4 +2,6 @@
 
 ## Future Improvements
 
-1. Add persistant login so that users don't need to login after they closed the application (set expiration in cookies in backend)
+1. Refine AI Outputs
+2. Create a knowledge base with famous bible commentary
+3. File upload facility and chat with PDF functionality.
