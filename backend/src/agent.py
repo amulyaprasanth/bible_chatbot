@@ -139,14 +139,14 @@ class BibleAssistant:
 
         return cleaned
 
-    def ask(self, query: str, messages: list = None) -> str:
+    async def ask(self, query: str, messages: list = None) -> str:
         """Ask the assistant a question with optional prior messages (memory) and get the response."""
         try:
             if messages is None:
                 messages = []
             input_messages = messages + [{"role": "user", "content": query}]
-            response = self.agent.invoke({"messages": input_messages})
-            answer = response["messages"][-1].content
+            response = await self.agent.ainvoke({"messages": input_messages})
+            answer =  response["messages"][-1].content
 
             return self._clean_response(answer)
         except Exception as e:

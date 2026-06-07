@@ -1,44 +1,23 @@
 import { useGoogleLogin } from "@react-oauth/google";
 import { motion } from "framer-motion";
-import { useContext, useState } from "react";
+import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
-import { useNavigate } from "react-router-dom";
-import api from "../api/axios";
 import bgSigninLandscape from "../assets/bg_signin_landscape.jpg";
 import bgSigninPortrait from "../assets/bg_signin_portrait.jpg";
-import { AuthContext } from "../context/AuthContext";
+
+const REDIRECT_URI = `${globalThis.location.origin}/auth/callback`;
 
 const Login = () => {
-  const { setIsAuthenticated, setUser } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const login = useGoogleLogin({
-    onSuccess: (codeResponse) => {
-      setLoading(true);
-      void (async () => {
-        try {
-          const res = await api.post("/auth/google", codeResponse, {
-            withCredentials: true,
-          });
-
-          if (res.status === 200) {
-            // ✅ Update AuthContext directly
-            setUser(res.data.user);
-            setIsAuthenticated(true);
-
-            // Navigate after context update
-            navigate("/dashboard", { replace: true });
-          }
-        } catch (err) {
-          console.error("Login error:", err);
-        } finally {
-          setLoading(false);
-        }
-      })();
-    },
     flow: "auth-code",
-    onError: (error) => console.log("Login Failed:", error),
+    ux_mode: "redirect",
+    redirect_uri: REDIRECT_URI,
+    onError: (error) => {
+      console.error("Login Failed:", error);
+      setLoading(false);
+    },
   });
 
   return (
@@ -68,8 +47,7 @@ const Login = () => {
           initial={{ opacity: 0, scale: 0.9, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="bg-white/90 dark:bg-gray-900/90 rounded-2xl shadow-2xl p-6 md:p-10 w-full max-w-md backdrop-blur-lg transition-all duration-700 ease-in-out transform hover:scale-[1.02]"
-        >
+          className="bg-white/90 dark:bg-gray-900/90 rounded-2xl shadow-2xl p-6 md:p-10 w-full max-w-md backdrop-blur-lg transition-all duration-700 ease-in-out transform hover:scale-[1.02]">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6 text-center tracking-wide">
             Welcome
           </h2>
@@ -83,10 +61,12 @@ const Login = () => {
           </div>
 
           <button
-            onClick={() => login()}
+            onClick={() => {
+              setLoading(true);
+              login();
+            }}
             disabled={loading}
-            className="mt-3 flex items-center justify-center w-full gap-2 md:gap-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 py-2.5 md:py-3 font-medium text-sm md:text-base text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
-          >
+            className="mt-3 flex items-center justify-center w-full gap-2 md:gap-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 py-2.5 md:py-3 font-medium text-sm md:text-base text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed active:scale-95">
             <FcGoogle className="text-lg md:text-xl" />
             {loading ? "Signing in..." : "Continue with Google"}
           </button>

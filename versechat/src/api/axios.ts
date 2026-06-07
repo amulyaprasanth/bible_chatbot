@@ -1,16 +1,27 @@
 import axios from "axios";
 
+const PRODUCTION_API_URL = "https://bible-chatbot-backend.up.railway.app";
+const LOCAL_API_URL = "http://localhost:8000";
+
+const isLocal = import.meta.env.VITE_LOCAL_API === "true";
+const baseURL = isLocal ? LOCAL_API_URL : PRODUCTION_API_URL;
+
 const api = axios.create({
-  baseURL: "https://bible-chatbot-backend.up.railway.app",
+  baseURL,
   withCredentials: true,
   timeout: 15000,
 });
 
 let isRefreshing = false;
-let refreshQueue: Array<(token: string) => void> = [];
+let refreshQueue: Array<{
+  resolve: () => void;
+  reject: (err: unknown) => void;
+}> = [];
 
 const processQueue = (error: unknown = null) => {
-  refreshQueue.forEach((cb) => (error ? cb("") : cb("")));
+  refreshQueue.forEach(({ resolve, reject }) =>
+    error ? reject(error) : resolve(),
+  );
   refreshQueue = [];
 };
 
@@ -30,12 +41,9 @@ api.interceptors.response.use(
 
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
-          refreshQueue.push((token: string) => {
-            if (token) {
-              resolve(api(originalRequest));
-            } else {
-              reject(error);
-            }
+          refreshQueue.push({
+            resolve: () => resolve(api(originalRequest)),
+            reject: (err) => reject(err),
           });
         });
       }
@@ -57,7 +65,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;
