@@ -118,7 +118,7 @@ app.include_router(router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173",
-                   "https://versechatapp.netlify.app"],
+                   "https://versechat.up.railway.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
