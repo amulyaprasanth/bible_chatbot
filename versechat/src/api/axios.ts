@@ -1,7 +1,24 @@
 import axios from "axios";
 
-const baseURL =
+
+const rawBaseURL =
   import.meta.env.VITE_LOCAL_API_URL || import.meta.env.VITE_PROD_API_URL;
+
+if (!rawBaseURL) {
+  throw new Error(
+    "No API URL configured. Set VITE_LOCAL_API_URL or VITE_PROD_API_URL in your .env file.",
+  );
+}
+
+const baseURL = rawBaseURL.startsWith("http")
+  ? rawBaseURL
+  : `https://${rawBaseURL}`;
+
+const api = axios.create({
+  baseURL,
+  withCredentials: true,
+  timeout: 15000,
+});
 
 if (!baseURL) {
   throw new Error(
