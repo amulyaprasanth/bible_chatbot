@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface UseTypingAnimationOptions {
   speed?: number; // milliseconds per character
@@ -7,21 +7,21 @@ interface UseTypingAnimationOptions {
 
 export const useTypingAnimation = (
   text: string,
-  options: UseTypingAnimationOptions = {}
+  options: UseTypingAnimationOptions = {},
 ) => {
   const { speed = 20, onComplete } = options;
   const [displayedText, setDisplayedText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
+  // Keep onComplete in a ref so changing the callback never restarts the animation
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
   useEffect(() => {
     if (!text) {
       setDisplayedText("");
-      setIsTyping(false);
-      return;
-    }
-
-    // If text is the same, don't restart animation
-    if (displayedText === text) {
       setIsTyping(false);
       return;
     }
@@ -37,15 +37,16 @@ export const useTypingAnimation = (
       } else {
         clearInterval(interval);
         setIsTyping(false);
-        if (onComplete) {
-          onComplete();
+        if (onCompleteRef.current) {
+          onCompleteRef.current();
         }
       }
     }, speed);
 
     return () => clearInterval(interval);
-  }, [text, speed, onComplete]);
+    // onComplete intentionally excluded — stored in a ref to avoid restarting animation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text, speed]);
 
   return { displayedText, isTyping };
 };
-
