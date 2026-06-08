@@ -146,13 +146,20 @@ const Dashboard = () => {
         <div className="hidden md:block w-10" />
 
         {/* Title */}
-        <motion.h1
+        <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-          className="flex-1 text-center text-sm md:text-3xl font-bold font-poppins tracking-wide">
-          Verse<span className="text-blue-400">Chat</span>
-        </motion.h1>
+          className="flex-1 flex items-center justify-center gap-2">
+          <img
+            src="/logo.png"
+            alt="VerseChat logo"
+            className="h-10 md:h-14 w-auto object-contain"
+          />
+          <span className="text-sm md:text-3xl font-bold font-poppins tracking-wide">
+            Verse<span className="text-blue-400">Chat</span>
+          </span>
+        </motion.div>
 
         {/* Profile Menu */}
         <div className="relative" ref={menuRef}>

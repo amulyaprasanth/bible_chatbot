@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { FaRobot } from "react-icons/fa";
 import type { Message } from "../context/MessageContext";
 import { useTypingAnimation } from "../hooks/useTypingAnimation";
 
@@ -48,8 +47,12 @@ const MessageBubble = ({
             damping: 15,
             delay: 0.1,
           }}
-          className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
-          <FaRobot className="text-xl text-indigo-400" />
+          className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center overflow-hidden shrink-0">
+          <img
+            src="/logo.png"
+            alt="Assistant"
+            className="w-full h-full object-cover"
+          />
         </motion.div>
       )}
 
