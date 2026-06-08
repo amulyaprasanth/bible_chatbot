@@ -2,6 +2,5 @@
 
 ## Future Improvements
 
-1. Refine AI Outputs
-2. Create a knowledge base with famous bible commentary
-3. File upload facility and chat with PDF functionality.
+1. Create a knowledge base with famous bible commentary
+2. File upload facility and chat with PDF functionality.
