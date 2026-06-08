@@ -14,11 +14,6 @@ const baseURL = rawBaseURL.startsWith("http")
   ? rawBaseURL
   : `https://${rawBaseURL}`;
 
-const api = axios.create({
-  baseURL,
-  withCredentials: true,
-  timeout: 15000,
-});
 
 if (!baseURL) {
   throw new Error(
