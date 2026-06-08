@@ -1,10 +1,13 @@
 import axios from "axios";
 
-const PRODUCTION_API_URL = "https://bible-chatbot-backend.up.railway.app";
-const LOCAL_API_URL = "http://localhost:8000";
+const baseURL =
+  import.meta.env.VITE_LOCAL_API_URL || import.meta.env.VITE_PROD_API_URL;
 
-const isLocal = import.meta.env.VITE_LOCAL_API === "true";
-const baseURL = isLocal ? LOCAL_API_URL : PRODUCTION_API_URL;
+if (!baseURL) {
+  throw new Error(
+    "No API URL configured. Set VITE_LOCAL_API_URL or VITE_PROD_API_URL in your .env file.",
+  );
+}
 
 const api = axios.create({
   baseURL,
