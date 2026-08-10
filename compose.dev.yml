@@ -1,0 +1,15 @@
+name: "VerseChat-dev"
+
+services:
+
+  api:
+    build:
+      context: ./versechat-backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - type: bind
+        source: ./versechat-backend
+        target: /app/
+

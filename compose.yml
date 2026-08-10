@@ -1,0 +1,11 @@
+services:
+
+  api:
+    build: ./versechat-backend/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - type: bind
+        source: ./versechat-backend
+        target: /app/
+        read_only: true
