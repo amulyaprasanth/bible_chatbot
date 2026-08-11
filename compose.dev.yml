@@ -2,6 +2,24 @@ name: "VerseChat-dev"
 
 services:
 
+  frontend:
+    build:
+      context: ./versechat
+      dockerfile: Dockerfile.dev
+
+    depends_on:
+      - api
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - type: bind
+        source: ./versechat
+        target: /app/
+    networks:
+      - interservice_network
+
   api:
     build:
       context: ./versechat-backend
@@ -12,4 +30,9 @@ services:
       - type: bind
         source: ./versechat-backend
         target: /app/
+    networks:
+      - interservice_network
 
+networks:
+  interservice_network:
+    driver: bridge
